@@ -1,397 +1,233 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" class="h-full scroll-smooth">
 <head>
-  <meta charset="UTF-8" />
-  <title>Putter | Terminal</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Putter | Golf Portfolio Infrastructure</title>
   
+  <!-- Typography -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  
+  <!-- Tailwind -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: { 
+            sans: ['Inter', 'sans-serif'],
+            mono: ['JetBrains Mono', 'monospace'],
+          },
+          colors: {
+            dark: { 900: '#020408', 800: '#0C0E12', border: 'rgba(255,255,255,0.08)' },
+            accent: { green: '#39FF88', blue: '#39DFFF' }
+          },
+          animation: {
+            'fade-up': 'fadeUp 0.8s ease-out forwards'
+          },
+          keyframes: {
+            fadeUp: {
+              '0%': { opacity: '0', transform: 'translateY(20px)' },
+              '100%': { opacity: '1', transform: 'translateY(0)' },
+            }
+          }
+        }
+      }
+    }
+  </script>
+
   <style>
-    :root {
-      --bg: #050509;
-      --bg-grad: radial-gradient(circle at 50% 0%, #13131f 0%, #050509 60%);
-      --surface: #0c0c12;
-      --surface-highlight: #16161e;
-      --border: rgba(255, 255, 255, 0.08);
-      --accent: #39ff88;
-      --accent-glow: rgba(57, 255, 136, 0.3);
-      --text: #ededf2;
-      --muted: #888b99;
-      --font-main: "Inter", sans-serif;
-      --font-mono: "JetBrains Mono", monospace;
+    /* Spotlight Effect */
+    .spotlight {
+      background: radial-gradient(600px circle at var(--x) var(--y), rgba(57, 255, 136, 0.06), transparent 40%);
+      z-index: 1;
     }
-    
-    * { box-sizing: border-box; margin: 0; padding: 0; }
-
-    body {
-      font-family: var(--font-main);
-      background: var(--bg);
-      background-image: var(--bg-grad);
-      color: var(--text);
-      min-height: 100vh;
-      line-height: 1.6;
-      -webkit-font-smoothing: antialiased;
+    /* Glass Card */
+    .glass-card {
+      background: rgba(12, 14, 18, 0.6);
+      backdrop-filter: blur(12px);
+      border: 1px solid rgba(255, 255, 255, 0.05);
+      transition: all 0.3s ease;
     }
-
-    /* Utility & Animation */
-    .hidden { display: none !important; }
-    .fade-in { animation: fadeIn 0.4s ease-in-out; }
-    
-    @keyframes fadeIn {
-      from { opacity: 0; transform: translateY(10px); }
-      to { opacity: 1; transform: translateY(0); }
-    }
-
-    .page { max-width: 1080px; margin: 0 auto; padding: 0 20px 80px; }
-
-    /* NAV */
-    .nav {
-      display: flex; align-items: center; justify-content: space-between;
-      padding: 24px 0; margin-bottom: 40px;
-    }
-    .brand { display: flex; align-items: center; gap: 12px; cursor: pointer; }
-    .brand-mark {
-      width: 32px; height: 32px;
-      background: linear-gradient(135deg, #fff, var(--accent));
-      border-radius: 6px; display: grid; place-items: center;
-      color: #000; font-weight: 800; font-size: 18px;
-    }
-    .brand-text { font-weight: 700; letter-spacing: -0.02em; font-size: 16px; }
-    .beta-tag {
-      font-size: 10px; padding: 2px 8px; border-radius: 99px;
-      background: rgba(57, 255, 136, 0.1); color: var(--accent);
-      border: 1px solid rgba(57, 255, 136, 0.2);
-      text-transform: uppercase; letter-spacing: 0.05em; font-weight: 600;
-    }
-
-    /* DASHBOARD (Big Buttons) */
-    .dashboard-grid {
-      display: grid; grid-template-columns: 1fr 1fr; gap: 24px;
-      margin-top: 40px;
-    }
-    .tool-card {
-      background: rgba(12, 12, 18, 0.6);
-      border: 1px solid var(--border);
-      border-radius: 16px; padding: 40px;
-      cursor: pointer; transition: all 0.3s ease;
-      position: relative; overflow: hidden;
-      display: flex; flex-direction: column; align-items: flex-start; justify-content: center;
-      min-height: 250px;
-    }
-    .tool-card:hover {
-      border-color: var(--accent);
+    .glass-card:hover {
+      border-color: rgba(57, 255, 136, 0.3);
       transform: translateY(-4px);
-      background: var(--surface-highlight);
-      box-shadow: 0 0 30px var(--accent-glow);
-    }
-    .tool-icon { font-size: 32px; margin-bottom: 16px; }
-    .tool-title { font-family: var(--font-mono); font-size: 20px; font-weight: 700; margin-bottom: 8px; color: #fff; }
-    .tool-desc { color: var(--muted); font-size: 14px; max-width: 300px; }
-
-    /* WORKSPACE (The Terminal) */
-    .workspace {
-      background: #0c0c12;
-      border: 1px solid var(--border);
-      border-radius: 16px; padding: 32px;
-      box-shadow: 0 40px 80px -20px rgba(0,0,0,0.8);
-      margin-top: 20px; position: relative;
-    }
-    .workspace-header {
-      display: flex; justify-content: space-between; align-items: center;
-      margin-bottom: 32px; padding-bottom: 16px;
-      border-bottom: 1px solid var(--border);
-    }
-    .back-btn {
-      font-family: var(--font-mono); font-size: 12px; color: var(--muted);
-      cursor: pointer; text-transform: uppercase; letter-spacing: 1px;
-    }
-    .back-btn:hover { color: var(--accent); }
-
-    /* FORM ELEMENTS */
-    .input-group { margin-bottom: 20px; }
-    label { display: block; font-size: 13px; color: var(--muted); margin-bottom: 8px; }
-    
-    input[type="number"], input[type="text"] {
-      width: 100%;
-      background: rgba(255,255,255,0.03);
-      border: 1px solid var(--border);
-      color: #fff;
-      padding: 12px 16px;
-      border-radius: 8px;
-      font-family: var(--font-mono);
-      font-size: 14px;
-      outline: none; transition: 0.2s;
-    }
-    input:focus { border-color: var(--accent); background: rgba(57, 255, 136, 0.05); }
-
-    .row-inputs { display: flex; gap: 12px; margin-bottom: 12px; }
-    
-    .btn-action {
-      background: var(--text); color: var(--bg);
-      padding: 12px 24px; border-radius: 8px;
-      font-weight: 600; font-size: 14px; border: none;
-      cursor: pointer; width: 100%; margin-top: 16px;
-      transition: 0.2s;
-    }
-    .btn-action:hover { background: var(--accent); }
-    
-    .btn-secondary {
-      background: transparent; color: var(--muted);
-      border: 1px solid var(--border);
-      padding: 8px 16px; border-radius: 6px;
-      font-size: 12px; cursor: pointer; margin-top: 8px;
-    }
-    .btn-secondary:hover { color: #fff; border-color: #fff; }
-
-    /* RESULTS AREA */
-    .results-console {
-      margin-top: 32px; padding: 20px;
-      background: #000; border-radius: 8px;
-      border: 1px solid var(--border);
-      font-family: var(--font-mono); font-size: 13px;
-    }
-    .result-line { margin-bottom: 8px; display: flex; justify-content: space-between; }
-    .result-val { color: var(--accent); }
-    
-    /* TABLE STYLES */
-    table { width: 100%; border-collapse: collapse; margin-top: 16px; font-size: 13px; font-family: var(--font-mono); }
-    th { text-align: left; color: var(--muted); padding: 8px; border-bottom: 1px solid var(--border); font-weight: normal; }
-    td { padding: 8px; border-bottom: 1px solid rgba(255,255,255,0.05); color: #fff; }
-    tr:last-child td { border-bottom: none; }
-
-    @media (max-width: 700px) {
-      .dashboard-grid { grid-template-columns: 1fr; }
-      .row-inputs { flex-direction: column; gap: 8px; }
+      box-shadow: 0 10px 40px -10px rgba(57, 255, 136, 0.1);
     }
   </style>
 </head>
-<body>
 
-  <div class="page">
-    <nav class="nav">
-      <div class="brand" onclick="showDashboard()">
-        <div class="brand-mark">P</div>
-        <div class="brand-text">PUTTER</div>
-        <div class="beta-tag">Tools</div>
-      </div>
-      <div style="font-family: var(--font-mono); font-size: 12px; color: var(--muted);">v1.0</div>
-    </nav>
+<body class="bg-dark-900 text-slate-300 antialiased overflow-x-hidden relative selection:bg-accent-green/20 selection:text-accent-green">
 
-    <div id="dashboard" class="dashboard-grid fade-in">
-      <div class="tool-card" onclick="loadTool('pvi')">
-        <div class="tool-icon">📊</div>
-        <div class="tool-title">PVI ANALYZER</div>
-        <div class="tool-desc">Calculate Performance Value Index. Measure your edge against closing line value.</div>
-      </div>
-      
-      <div class="tool-card" onclick="loadTool('alloc')">
-        <div class="tool-icon">⚖️</div>
-        <div class="tool-title">UNIT ALLOCATOR</div>
-        <div class="tool-desc">Distribute risk across a card. Convert total units into specific stake sizes.</div>
-      </div>
-    </div>
+  <!-- Mouse Spotlight -->
+  <div id="spotlight" class="fixed inset-0 pointer-events-none"></div>
 
-    <div id="workspace" class="workspace hidden">
-      <div class="workspace-header">
-        <h3 id="tool-header-title" style="font-weight: 600;">Tool Name</h3>
-        <div class="back-btn" onclick="showDashboard()">← Back to Menu</div>
-      </div>
-
-      <div id="tool-pvi" class="hidden">
-        <div class="input-group">
-          <label>Tournament Purse ($)</label>
-          <input type="number" id="pvi-purse" placeholder="e.g. 8000000">
-        </div>
-        <div class="input-group">
-          <label>Player Earnings ($)</label>
-          <input type="number" id="pvi-earnings" placeholder="e.g. 540000">
-        </div>
-        <div class="input-group">
-          <label>Starting Odds (Fractional)</label>
-          <div style="display:flex; align-items:center; gap:8px;">
-             <input type="number" id="pvi-odds" placeholder="e.g. 120">
-             <span style="font-family:var(--font-mono); color:var(--muted);">/1</span>
-          </div>
-        </div>
-        <button class="btn-action" onclick="calculatePVI()">RUN ANALYSIS</button>
-        
-        <div id="pvi-result" class="results-console hidden">
-          </div>
-      </div>
-
-      <div id="tool-alloc" class="hidden">
-        <div style="display:grid; grid-template-columns: 1fr 1fr; gap:16px;">
-          <div class="input-group">
-            <label>Total Units to Risk</label>
-            <input type="number" id="alloc-total" placeholder="e.g. 50">
-          </div>
-          <div class="input-group">
-            <label>Unit Size ($)</label>
-            <input type="number" id="alloc-unit" placeholder="e.g. 5">
-          </div>
-        </div>
-
-        <div style="margin: 24px 0 12px; border-bottom: 1px solid var(--border); padding-bottom: 8px; display:flex; justify-content:space-between; align-items:end;">
-          <label style="margin:0">Players & Odds</label>
-          <button class="btn-secondary" onclick="addPlayerRow()">+ Add Player</button>
-        </div>
-
-        <div id="players-container">
-          </div>
-
-        <button class="btn-action" onclick="calculateAllocation()">CALCULATE STAKES</button>
-        <div id="alloc-error" style="color:#ff4444; font-size:12px; margin-top:8px; display:none;"></div>
-
-        <div id="alloc-result" class="results-console hidden" style="overflow-x:auto;">
-          <table id="alloc-table">
-            <thead>
-              <tr>
-                <th>Player</th>
-                <th>Odds</th>
-                <th>Units</th>
-                <th>Stake ($)</th>
-                <th>Win (U)</th>
-              </tr>
-            </thead>
-            <tbody id="alloc-body"></tbody>
-          </table>
-        </div>
-      </div>
-
-    </div>
+  <!-- Background Grid -->
+  <div class="fixed inset-0 z-0 opacity-[0.04] pointer-events-none" 
+       style="background-image: linear-gradient(#fff 1px, transparent 1px), linear-gradient(90deg, #fff 1px, transparent 1px); background-size: 50px 50px;">
   </div>
 
-  <script>
-    // --- UI STATE MANAGEMENT ---
-    function showDashboard() {
-      document.getElementById('dashboard').classList.remove('hidden');
-      document.getElementById('workspace').classList.add('hidden');
+  <!-- Header -->
+  <nav class="fixed w-full z-50 top-0 border-b border-white/5 bg-dark-900/80 backdrop-blur-xl">
+    <div class="max-w-7xl mx-auto px-6 h-16 flex items-center justify-between">
+      <div class="flex items-center gap-2">
+        <div class="w-6 h-6 bg-gradient-to-tr from-white to-slate-500 rounded-md flex items-center justify-center text-black font-bold font-mono text-xs">P</div>
+        <span class="font-semibold text-white tracking-tight">PUTTER.BET</span>
+      </div>
+      <div class="hidden md:flex gap-6 text-xs font-medium text-slate-400">
+        <a href="#tools" class="hover:text-white transition-colors">Terminal</a>
+        <a href="#method" class="hover:text-white transition-colors">Methodology</a>
+      </div>
+      <a href="#tools" class="text-xs font-mono text-accent-green border border-accent-green/20 bg-accent-green/5 px-3 py-1.5 rounded hover:bg-accent-green/10 transition-colors">
+        LAUNCH APP
+      </a>
+    </div>
+  </nav>
+
+  <!-- Hero Section -->
+  <section class="relative z-10 pt-32 pb-20 px-6 max-w-7xl mx-auto text-center">
+    <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full border border-white/10 bg-white/5 text-[10px] uppercase tracking-widest text-accent-blue mb-8 animate-[fadeUp_0.8s_ease-out_forwards]">
+      <span class="w-1.5 h-1.5 rounded-full bg-accent-blue animate-pulse"></span>
+      Portfolio System v2.0
+    </div>
+    
+    <h1 class="text-5xl md:text-7xl font-bold text-white tracking-tight mb-6 leading-tight opacity-0 animate-[fadeUp_0.8s_0.2s_ease-out_forwards]">
+      Engineered for <br />
+      <span class="text-transparent bg-clip-text bg-gradient-to-r from-white via-slate-400 to-slate-600">smoothed volatility.</span>
+    </h1>
+    
+    <p class="text-lg text-slate-500 max-w-2xl mx-auto mb-12 opacity-0 animate-[fadeUp_0.8s_0.4s_ease-out_forwards]">
+      Analysis chooses the players. Algorithms handle the money. <br>
+      A disciplined infrastructure for managing golf outright portfolios.
+    </p>
+  </section>
+
+  <!-- The Tools Grid -->
+  <section id="tools" class="relative z-10 px-6 pb-32 max-w-7xl mx-auto">
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
       
-      // Reset fields on exit
-      document.getElementById('pvi-result').classList.add('hidden');
-      document.getElementById('alloc-result').classList.add('hidden');
-    }
-
-    function loadTool(toolId) {
-      document.getElementById('dashboard').classList.add('hidden');
-      const workspace = document.getElementById('workspace');
-      workspace.classList.remove('hidden');
-      workspace.classList.add('fade-in');
-
-      // Hide all tools first
-      document.getElementById('tool-pvi').classList.add('hidden');
-      document.getElementById('tool-alloc').classList.add('hidden');
-
-      if (toolId === 'pvi') {
-        document.getElementById('tool-header-title').innerText = "PVI Analyzer";
-        document.getElementById('tool-pvi').classList.remove('hidden');
-      } else if (toolId === 'alloc') {
-        document.getElementById('tool-header-title').innerText = "Unit Allocation";
-        document.getElementById('tool-alloc').classList.remove('hidden');
-        // Initialize with 3 rows if empty
-        if(document.getElementById('players-container').children.length === 0) {
-            for(let i=0; i<3; i++) addPlayerRow();
-        }
-      }
-    }
-
-    // --- PVI LOGIC ---
-    function calculatePVI() {
-      const purse = parseFloat(document.getElementById('pvi-purse').value);
-      const earnings = parseFloat(document.getElementById('pvi-earnings').value);
-      const fracNum = parseFloat(document.getElementById('pvi-odds').value);
-      const resultBox = document.getElementById('pvi-result');
-
-      if (!purse || !earnings || isNaN(fracNum)) {
-        resultBox.classList.remove('hidden');
-        resultBox.innerHTML = `<span style="color:#ff4444">Error: Please enter valid numbers in all fields.</span>`;
-        return;
-      }
-
-      const relativeWinnings = earnings / purse;
-      const impliedProb = 1 / (fracNum + 1);
-      const pvi = relativeWinnings / impliedProb;
-
-      resultBox.classList.remove('hidden');
-      resultBox.innerHTML = `
-        <div class="result-line"><span>PVI Score</span> <span class="result-val" style="font-size:1.2em; font-weight:700;">${pvi.toFixed(2)}x</span></div>
-        <div class="result-line"><span>Relative Winnings</span> <span>${(relativeWinnings * 100).toFixed(2)}%</span></div>
-        <div class="result-line"><span>Implied Prob</span> <span>${(impliedProb * 100).toFixed(2)}%</span></div>
-      `;
-    }
-
-    // --- ALLOCATION LOGIC ---
-    function addPlayerRow() {
-      const container = document.getElementById('players-container');
-      const div = document.createElement('div');
-      div.className = 'row-inputs fade-in';
-      div.innerHTML = `
-        <input type="text" class="player-name" placeholder="Player Name" style="flex:2">
-        <div style="display:flex; align-items:center; gap:8px; flex:1">
-          <input type="number" class="player-odds" placeholder="120" min="0">
-          <span style="color:var(--muted); font-size:12px;">/1</span>
+      <!-- CARD 1: ANALYZER (Links to analyzer.html) -->
+      <a href="analyzer.html" class="group glass-card rounded-2xl p-8 flex flex-col h-80 opacity-0 animate-[fadeUp_0.8s_0.6s_ease-out_forwards]">
+        <div class="mb-auto">
+          <div class="w-12 h-12 rounded-lg bg-dark-800 border border-dark-border flex items-center justify-center mb-6 group-hover:scale-110 transition-transform duration-300">
+            <span class="text-2xl">📊</span>
+          </div>
+          <h3 class="text-xl font-bold text-white mb-2">PVI Analyzer</h3>
+          <p class="text-sm text-slate-400 leading-relaxed">
+            Access the historical data core. Filter by Consistency Index (CI) and Momentum to identify players who outperform implied odds.
+          </p>
         </div>
-      `;
-      container.appendChild(div);
-    }
+        <div class="flex items-center gap-2 text-xs font-mono text-accent-green opacity-50 group-hover:opacity-100 transition-opacity">
+          <span>ENTER TERMINAL</span>
+          <svg class="w-3 h-3 transform group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 8l4 4m0 0l-4 4m4-4H3"></path></svg>
+        </div>
+      </a>
 
-    function calculateAllocation() {
-      const totalUnits = parseFloat(document.getElementById("alloc-total").value);
-      const unitValue = parseFloat(document.getElementById("alloc-unit").value);
-      const errorMsg = document.getElementById("alloc-error");
-      const resultBox = document.getElementById("alloc-result");
-      const tbody = document.getElementById("alloc-body");
+      <!-- CARD 2: ALLOCATOR -->
+      <a href="allocator.html" class="group glass-card rounded-2xl p-8 flex flex-col h-80 opacity-0 animate-[fadeUp_0.8s_0.7s_ease-out_forwards]">
+        <div class="mb-auto">
+          <div class="w-12 h-12 rounded-lg bg-dark-800 border border-dark-border flex items-center justify-center mb-6 group-hover:scale-110 transition-transform duration-300">
+            <span class="text-2xl">⚖️</span>
+          </div>
+          <h3 class="text-xl font-bold text-white mb-2">Equalized Payout</h3>
+          <p class="text-sm text-slate-400 leading-relaxed">
+            Eliminate card distortion. Input your selections and total risk to generate exact unit sizing for a balanced, volatility-dampened card.
+          </p>
+        </div>
+        <div class="flex items-center gap-2 text-xs font-mono text-slate-500 group-hover:text-white transition-colors">
+          <span>OPEN MODULE</span>
+          <svg class="w-3 h-3 transform group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 8l4 4m0 0l-4 4m4-4H3"></path></svg>
+        </div>
+      </a>
 
-      errorMsg.style.display = "none";
+      <!-- CARD 3: CALCULATOR -->
+      <a href="calculator.html" class="group glass-card rounded-2xl p-8 flex flex-col h-80 opacity-0 animate-[fadeUp_0.8s_0.8s_ease-out_forwards]">
+        <div class="mb-auto">
+          <div class="w-12 h-12 rounded-lg bg-dark-800 border border-dark-border flex items-center justify-center mb-6 group-hover:scale-110 transition-transform duration-300">
+            <span class="text-2xl">⚡️</span>
+          </div>
+          <h3 class="text-xl font-bold text-white mb-2">Quick PVI</h3>
+          <p class="text-sm text-slate-400 leading-relaxed">
+            Single-event calculator. Instantly determine PVI by inputting purse, finishing position earnings, and closing odds.
+          </p>
+        </div>
+        <div class="flex items-center gap-2 text-xs font-mono text-slate-500 group-hover:text-white transition-colors">
+          <span>OPEN MODULE</span>
+          <svg class="w-3 h-3 transform group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 8l4 4m0 0l-4 4m4-4H3"></path></svg>
+        </div>
+      </a>
 
-      if (isNaN(totalUnits) || totalUnits <= 0 || isNaN(unitValue) || unitValue <= 0) {
-        errorMsg.innerText = "Please enter valid Total Units and Unit Size.";
-        errorMsg.style.display = "block";
-        return;
-      }
+    </div>
+  </section>
 
-      const rows = document.querySelectorAll(".row-inputs");
-      const players = [];
-
-      rows.forEach(row => {
-        const name = row.querySelector(".player-name").value.trim();
-        const odds = parseFloat(row.querySelector(".player-odds").value);
-
-        if (name && !isNaN(odds)) {
-          players.push({ name, frac: odds, dec: odds + 1 });
-        }
-      });
-
-      if (players.length === 0) {
-        errorMsg.innerText = "Add at least one player with a name and odds.";
-        errorMsg.style.display = "block";
-        return;
-      }
-
-      // Logic: Inverse Decimal Odds Sum
-      const invSum = players.reduce((sum, p) => sum + 1 / p.dec, 0);
-
-      tbody.innerHTML = "";
+  <!-- Methodology / Manifesto -->
+  <section id="method" class="relative z-10 px-6 py-20 border-t border-white/5 bg-black/40">
+    <div class="max-w-4xl mx-auto">
+      <h2 class="text-3xl font-bold text-white mb-12 text-center">The Architecture of Logic</h2>
       
-      players.forEach(p => {
-        const stakeUnits = (1 / p.dec) / invSum * totalUnits;
-        const stakeDollars = stakeUnits * unitValue;
-        const winUnits = stakeUnits * p.dec;
-        // const winDollars = stakeDollars * p.dec;
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-12">
+        <!-- Principle 1 -->
+        <div>
+          <h3 class="text-accent-green font-mono text-sm mb-2">01 // VALUE</h3>
+          <h4 class="text-xl font-bold text-white mb-2">PVI (Performance Value Index)</h4>
+          <p class="text-sm text-slate-400 leading-relaxed">
+            We do not hunt for "picks." We hunt for value. PVI quantifies how well a player performed relative to their implied odds. It answers the only question that matters: <em>Did this player return more value than the market expected?</em>
+          </p>
+        </div>
 
-        const tr = document.createElement("tr");
-        tr.innerHTML = `
-          <td><span style="color:#fff; font-weight:500">${p.name}</span></td>
-          <td>${p.frac}/1</td>
-          <td style="color:var(--accent)">${stakeUnits.toFixed(2)}u</td>
-          <td>$${stakeDollars.toFixed(2)}</td>
-          <td>${winUnits.toFixed(2)}u</td>
-        `;
-        tbody.appendChild(tr);
-      });
+        <!-- Principle 2 -->
+        <div>
+          <h3 class="text-accent-blue font-mono text-sm mb-2">02 // STABILITY</h3>
+          <h4 class="text-xl font-bold text-white mb-2">Consistency Index (CI)</h4>
+          <p class="text-sm text-slate-400 leading-relaxed">
+            Avg PVI divided by Standard Deviation. This metric filters out the "boom-or-bust" landmines. We prioritize players who deliver steady edges, ensuring your portfolio grows without violent variance.
+          </p>
+        </div>
 
-      resultBox.classList.remove('hidden');
-    }
+        <!-- Principle 3 -->
+        <div>
+          <h3 class="text-purple-400 font-mono text-sm mb-2">03 // TIMING</h3>
+          <h4 class="text-xl font-bold text-white mb-2">Momentum Delta</h4>
+          <p class="text-sm text-slate-400 leading-relaxed">
+            Comparing the last 3 events against the previous 3. Momentum detects form shifts before the books adjust pricing, allowing us to capture value before it evaporates.
+          </p>
+        </div>
+
+        <!-- Principle 4 -->
+        <div>
+          <h3 class="text-white font-mono text-sm mb-2">04 // EXECUTION</h3>
+          <h4 class="text-xl font-bold text-white mb-2">Equalized Payouts</h4>
+          <p class="text-sm text-slate-400 leading-relaxed">
+            Longshots get small stakes. Favorites get large stakes. Every win pays the same. This eliminates "sizing tilt" and ensures that your results depend only on selection accuracy, not luck in allocation.
+          </p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Footer -->
+  <footer class="border-t border-white/5 py-12 bg-black">
+    <div class="max-w-7xl mx-auto px-6 flex flex-col md:flex-row justify-between items-center gap-6">
+      <div class="flex flex-col gap-1">
+        <span class="text-white font-bold tracking-tight">PUTTER.BET</span>
+        <span class="text-[10px] text-slate-600 font-mono">EST. 2025 // DATA INFRASTRUCTURE</span>
+      </div>
+      <div class="text-[10px] text-slate-600">
+        &copy; 2025 Putter Systems. All rights reserved.
+      </div>
+    </div>
+  </footer>
+
+  <script>
+    // Spotlight Effect Logic
+    const spotlight = document.getElementById('spotlight');
+    window.addEventListener('mousemove', e => {
+      spotlight.style.setProperty('--x', `${e.clientX}px`);
+      spotlight.style.setProperty('--y', `${e.clientY}px`);
+    });
   </script>
+
 </body>
 </html>
