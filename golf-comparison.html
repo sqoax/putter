@@ -1,0 +1,1124 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Putter — Head to Head</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    background: #080c10;
+    color: #e8edf2;
+    font-family: system-ui, -apple-system, sans-serif;
+    font-size: 16px;
+    line-height: 1.5;
+    min-height: 100vh;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  .navbar {
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    background: rgba(8, 12, 16, 0.85);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border-bottom: 1px solid #1e2530;
+    height: 64px;
+    display: flex;
+    align-items: center;
+    padding: 0 32px;
+  }
+
+  .nav-inner {
+    max-width: 1100px;
+    width: 100%;
+    margin: 0 auto;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+  }
+
+  .nav-left {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-shrink: 0;
+  }
+
+  .nav-wordmark {
+    font-size: 20px;
+    font-weight: 700;
+    color: #fff;
+    letter-spacing: -0.02em;
+    text-decoration: none;
+  }
+
+  .nav-free-badge {
+    font-size: 10px;
+    font-weight: 600;
+    color: #2f81f7;
+    background: rgba(47, 129, 247, 0.1);
+    border: 1px solid rgba(47, 129, 247, 0.25);
+    padding: 2px 7px;
+    border-radius: 20px;
+    letter-spacing: 0.02em;
+  }
+
+  .nav-tabs {
+    display: flex;
+    gap: 6px;
+    align-items: center;
+  }
+
+  .nav-tab {
+    font-size: 13px;
+    font-weight: 500;
+    color: #5a6478;
+    text-decoration: none;
+    padding: 6px 14px;
+    border-radius: 20px;
+    background: #0d1117;
+    border: 1px solid #1e2530;
+    transition: border-color 0.15s, color 0.15s;
+    white-space: nowrap;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+  }
+
+  .nav-tab:hover {
+    border-color: #2f81f7;
+    color: #e8edf2;
+  }
+
+  .nav-tab.active {
+    border-color: #2f81f7;
+    color: #e8edf2;
+    background: #111827;
+  }
+
+  .container { max-width: 1100px; margin: 0 auto; padding: 30px 32px 40px; }
+
+  h1 {
+    font-size: 36px;
+    font-weight: 700;
+    letter-spacing: -0.03em;
+    line-height: 1.05;
+    margin-bottom: 8px;
+    color: #fff;
+  }
+  h1 span.sub {
+    display: block;
+    font-size: 15px;
+    font-weight: 400;
+    color: #5a6478;
+    margin-top: 10px;
+    letter-spacing: 0;
+    line-height: 1.5;
+  }
+
+  .section-title {
+    font-size: 12px;
+    font-weight: 600;
+    letter-spacing: 1.2px;
+    text-transform: uppercase;
+    color: #5a6478;
+    margin-bottom: 14px;
+    padding-bottom: 8px;
+    border-bottom: 1px solid #1e2530;
+  }
+
+  /* ---------- Search Area ---------- */
+  .search-area {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 20px;
+    margin-bottom: 32px;
+  }
+  .search-box { position: relative; }
+  .search-box label {
+    display: block;
+    font-size: 12px;
+    font-weight: 600;
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
+    margin-bottom: 6px;
+  }
+  .search-box.player-a label { color: #2f81f7; }
+  .search-box.player-b label { color: #f0883e; }
+
+  .search-input-wrap {
+    position: relative;
+    display: flex;
+    align-items: center;
+  }
+  .search-input-wrap input {
+    width: 100%;
+    padding: 10px 36px 10px 14px;
+    border: 1px solid #1e2530;
+    border-radius: 10px;
+    background: #0d1117;
+    color: #e8edf2;
+    font-size: 14px;
+    outline: none;
+    transition: border-color 0.15s;
+  }
+  .search-input-wrap input:focus { border-color: #2f81f7; }
+  .search-box.player-b .search-input-wrap input:focus { border-color: #f0883e; }
+  .search-input-wrap input.selected-a { border-color: #2f81f7; }
+  .search-input-wrap input.selected-b { border-color: #f0883e; }
+
+  .clear-btn {
+    position: absolute;
+    right: 10px;
+    background: none;
+    border: none;
+    color: #5a6478;
+    font-size: 18px;
+    cursor: pointer;
+    display: none;
+    line-height: 1;
+    padding: 2px;
+  }
+  .clear-btn:hover { color: #e8edf2; }
+  .clear-btn.visible { display: block; }
+
+  .dropdown {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    right: 0;
+    background: #0d1117;
+    border: 1px solid #1e2530;
+    border-radius: 10px;
+    max-height: 240px;
+    overflow-y: auto;
+    z-index: 100;
+    display: none;
+    margin-top: 4px;
+  }
+  .dropdown.open { display: block; }
+  .dropdown-item {
+    padding: 8px 14px;
+    font-size: 14px;
+    cursor: pointer;
+    border-bottom: 1px solid #1e2530;
+  }
+  .dropdown-item:last-child { border-bottom: none; }
+  .dropdown-item:hover { background: #1c2129; }
+
+  /* ---------- Loading / Empty ---------- */
+  .loading {
+    text-align: center;
+    padding: 60px 20px;
+    color: #5a6478;
+  }
+  .spinner {
+    width: 36px; height: 36px;
+    border: 3px solid #1e2530;
+    border-top-color: #2f81f7;
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+    margin: 0 auto 16px;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  .empty-state {
+    text-align: center;
+    padding: 60px 20px;
+    color: #5a6478;
+    font-size: 15px;
+  }
+
+  .error-box {
+    background: #1c1208;
+    border: 1px solid #bb8009;
+    color: #e3b341;
+    padding: 14px 18px;
+    border-radius: 10px;
+    margin-bottom: 20px;
+  }
+
+  /* ---------- Section spacing ---------- */
+  .comparison-content section { margin-bottom: 36px; }
+
+  /* ---------- Header Cards ---------- */
+  .header-cards {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 20px;
+  }
+  .player-card {
+    background: #0d1117;
+    border: 1px solid #1e2530;
+    border-radius: 10px;
+    padding: 20px;
+    border-left: 4px solid;
+  }
+  .player-card.card-a { border-left-color: #2f81f7; }
+  .player-card.card-b { border-left-color: #f0883e; }
+  .player-card .pname {
+    font-size: 18px;
+    font-weight: 600;
+    margin-bottom: 14px;
+  }
+  .card-a .pname { color: #2f81f7; }
+  .card-b .pname { color: #f0883e; }
+  .stat-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 10px;
+  }
+  .stat-cell {
+    text-align: center;
+  }
+  .stat-cell .stat-val {
+    font-size: 20px;
+    font-weight: 600;
+    color: #e8edf2;
+  }
+  .stat-cell .stat-label {
+    font-size: 11px;
+    color: #5a6478;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+
+  /* ---------- Radar ---------- */
+  .radar-wrap {
+    max-width: 520px;
+    margin: 0 auto;
+  }
+
+  /* ---------- H2H Bars ---------- */
+  .h2h-row {
+    display: flex;
+    align-items: center;
+    margin-bottom: 10px;
+  }
+  .h2h-label {
+    width: 80px;
+    text-align: right;
+    font-size: 12px;
+    font-weight: 600;
+    color: #5a6478;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    flex-shrink: 0;
+    padding-right: 12px;
+  }
+  .h2h-track {
+    flex: 1;
+    height: 30px;
+    position: relative;
+    background: #0d1117;
+    border-radius: 4px;
+    overflow: visible;
+  }
+  .h2h-center {
+    position: absolute;
+    left: 50%;
+    top: 0;
+    bottom: 0;
+    width: 1px;
+    background: #1e2530;
+  }
+  .h2h-bar {
+    position: absolute;
+    top: 3px;
+    height: 24px;
+    border-radius: 3px;
+    transition: width 0.3s;
+    display: flex;
+    align-items: center;
+  }
+  .h2h-bar.bar-a {
+    right: 50%;
+    background: #2f81f7;
+    justify-content: flex-start;
+    padding-left: 6px;
+  }
+  .h2h-bar.bar-b {
+    left: 50%;
+    background: #f0883e;
+    justify-content: flex-end;
+    padding-right: 6px;
+  }
+  .h2h-val {
+    font-size: 11px;
+    font-weight: 600;
+    color: #080c10;
+    white-space: nowrap;
+  }
+  .h2h-val-outside {
+    position: absolute;
+    top: 3px;
+    height: 24px;
+    display: flex;
+    align-items: center;
+    font-size: 11px;
+    font-weight: 600;
+    white-space: nowrap;
+  }
+  .h2h-val-outside.val-a { color: #2f81f7; }
+  .h2h-val-outside.val-b { color: #f0883e; }
+
+  /* ---------- Chart canvas ---------- */
+  .chart-container {
+    background: #0d1117;
+    border: 1px solid #1e2530;
+    border-radius: 10px;
+    padding: 20px;
+  }
+
+  /* ---------- Event Overlap Table ---------- */
+  .overlap-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 14px;
+  }
+  .overlap-table th {
+    text-align: left;
+    padding: 10px 12px;
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    color: #5a6478;
+    border-bottom: 2px solid #1e2530;
+    background: #0d1117;
+  }
+  .overlap-table td {
+    padding: 8px 12px;
+    border-bottom: 1px solid #1e2530;
+  }
+  .overlap-table tr.winner-a td { background: rgba(47,129,247,0.06); }
+  .overlap-table tr.winner-b td { background: rgba(240,136,62,0.06); }
+  .positive { color: #3fb950; }
+  .negative { color: #f85149; }
+  .neutral { color: #5a6478; }
+  .col-a { color: #2f81f7; }
+  .col-b { color: #f0883e; }
+
+  /* ---------- Verdict Pills ---------- */
+  .verdict-row {
+    display: flex;
+    gap: 14px;
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+  .verdict-pill {
+    padding: 10px 20px;
+    border-radius: 10px;
+    font-size: 14px;
+    font-weight: 600;
+    text-align: center;
+    min-width: 200px;
+  }
+  .pill-a { background: rgba(47,129,247,0.15); color: #2f81f7; border: 1px solid rgba(47,129,247,0.3); }
+  .pill-b { background: rgba(240,136,62,0.15); color: #f0883e; border: 1px solid rgba(240,136,62,0.3); }
+  .pill-tie { background: rgba(125,133,144,0.15); color: #5a6478; border: 1px solid rgba(125,133,144,0.3); }
+
+  .no-overlap {
+    text-align: center;
+    padding: 30px;
+    color: #5a6478;
+    font-style: italic;
+  }
+
+  /* Scrollbar */
+  ::-webkit-scrollbar { width: 8px; }
+  ::-webkit-scrollbar-track { background: #0d1117; }
+  ::-webkit-scrollbar-thumb { background: #1e2530; border-radius: 4px; }
+  ::-webkit-scrollbar-thumb:hover { background: #5a6478; }
+
+  @media (max-width: 900px) {
+    .navbar { padding: 0 20px; }
+    .nav-tabs { display: none; }
+    .container { padding: 22px 20px 34px; }
+    h1 { font-size: 30px; }
+    h1 span.sub { font-size: 14px; margin-top: 8px; }
+    .search-area { grid-template-columns: 1fr; gap: 14px; }
+    .header-cards { grid-template-columns: 1fr; gap: 12px; }
+    .stat-grid { grid-template-columns: 1fr 1fr; }
+    .h2h-label { width: 68px; padding-right: 8px; font-size: 11px; }
+    .verdict-pill { min-width: 160px; }
+  }
+</style>
+</head>
+<body>
+<nav class="navbar">
+  <div class="nav-inner">
+    <div class="nav-left">
+      <a href="index.html" class="nav-wordmark">PUTTER</a>
+      <span class="nav-free-badge">Free</span>
+    </div>
+    <div class="nav-tabs">
+      <a href="golf-model.html" class="nav-tab">Weekly Model</a>
+      <a href="golf-profile.html" class="nav-tab">Player Profiles</a>
+      <a href="golf-comparison.html" class="nav-tab active">Head to Head</a>
+    </div>
+  </div>
+</nav>
+<div class="container">
+  <h1>Head to Head<span class="sub">Compare any two players across strokes gained performance, shared events, form, and consistency.</span></h1>
+
+  <div class="search-area">
+    <div class="search-box player-a">
+      <label>Player A</label>
+      <div class="search-input-wrap">
+        <input type="text" id="searchA" placeholder="Search player..." autocomplete="off">
+        <button class="clear-btn" id="clearA" title="Clear">&times;</button>
+      </div>
+      <div class="dropdown" id="dropA"></div>
+    </div>
+    <div class="search-box player-b">
+      <label>Player B</label>
+      <div class="search-input-wrap">
+        <input type="text" id="searchB" placeholder="Search player..." autocomplete="off">
+        <button class="clear-btn" id="clearB" title="Clear">&times;</button>
+      </div>
+      <div class="dropdown" id="dropB"></div>
+    </div>
+  </div>
+
+  <div id="loadingArea" class="loading">
+    <div class="spinner"></div>
+    Loading player data...
+  </div>
+
+  <div id="emptyState" class="empty-state" style="display:none;">
+    Select two players above to compare
+  </div>
+
+  <div id="errorArea" style="display:none;"></div>
+
+  <div id="comparisonContent" class="comparison-content" style="display:none;"></div>
+</div>
+
+<script>
+const CSV_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vTPiodfvBnqD6FVNZXYBsv4KGipr4KYiQA273S64Quj3a9s1_dLaAEma665pM4m-zPRKJzcpkmDDDbN/pub?output=csv';
+const EVENT_ORDER = ['Procore','Sanderson','Utah','RSM','Sony','Amex','Farmers','Waste','Pebble','Genesis','Cognizant'];
+
+let allRows = [];
+let playerNames = [];
+let playerMap = {};   // name -> [rows]
+let globalStats = {}; // stat -> { min, max }
+let selectedA = null;
+let selectedB = null;
+let radarChart = null;
+let formChart = null;
+
+// ---------- CSV Parsing ----------
+function splitCSVLine(line) {
+  const cols = [];
+  let cur = '';
+  let inQuotes = false;
+  for (let i = 0; i < line.length; i++) {
+    const ch = line[i];
+    if (inQuotes) {
+      if (ch === '"' && line[i+1] === '"') { cur += '"'; i++; }
+      else if (ch === '"') { inQuotes = false; }
+      else { cur += ch; }
+    } else {
+      if (ch === '"') { inQuotes = true; }
+      else if (ch === ',') { cols.push(cur.trim()); cur = ''; }
+      else { cur += ch; }
+    }
+  }
+  cols.push(cur.trim());
+  return cols;
+}
+
+function parseCSV(text) {
+  const lines = text.split('\n').filter(l => l.trim());
+  if (!lines.length) return [];
+  const headers = splitCSVLine(lines[0]);
+  return lines.slice(1).map(line => {
+    const vals = splitCSVLine(line);
+    const obj = {};
+    headers.forEach((h, i) => { obj[h.trim()] = (vals[i] || '').trim(); });
+    return obj;
+  });
+}
+
+// ---------- Utilities ----------
+function num(v) { const n = parseFloat(v); return isNaN(n) ? null : n; }
+function avg(arr) {
+  const valid = arr.filter(v => v !== null);
+  return valid.length ? valid.reduce((a, b) => a + b, 0) / valid.length : null;
+}
+function stddev(arr) {
+  const valid = arr.filter(v => v !== null);
+  if (valid.length < 2) return null;
+  const m = valid.reduce((a, b) => a + b, 0) / valid.length;
+  return Math.sqrt(valid.reduce((s, v) => s + (v - m) ** 2, 0) / valid.length);
+}
+function fmtVal(v, decimals = 2) {
+  if (v === null || v === undefined) return '—';
+  return v.toFixed(decimals);
+}
+function fmtSG(v) {
+  if (v === null || v === undefined) return '<span class="neutral">—</span>';
+  const cls = v > 0.005 ? 'positive' : v < -0.005 ? 'negative' : 'neutral';
+  const prefix = v > 0.005 ? '+' : '';
+  return `<span class="${cls}">${prefix}${v.toFixed(2)}</span>`;
+}
+
+function eventSortKey(eventName) {
+  const lower = eventName.toLowerCase();
+  const idx = EVENT_ORDER.findIndex(e => lower.includes(e.toLowerCase()));
+  return idx >= 0 ? idx : 999;
+}
+
+function formatPlayerName(raw) {
+  const parts = raw.split(/\s+/);
+  if (parts.length < 2) return raw;
+  const last = parts[0];
+  const first = parts.slice(1).join(' ');
+  return first.charAt(0).toUpperCase() + first.slice(1).toLowerCase() + ' ' +
+         last.charAt(0).toUpperCase() + last.slice(1).toLowerCase();
+}
+
+// ---------- Data Loading ----------
+async function loadData() {
+  try {
+    const res = await fetch(CSV_URL);
+    if (!res.ok) throw new Error('Fetch failed');
+    const text = await res.text();
+    allRows = parseCSV(text);
+
+    playerMap = {};
+    allRows.forEach(row => {
+      const name = (row['PLAYER NAME'] || '').trim();
+      if (!name) return;
+      if (!playerMap[name]) playerMap[name] = [];
+      playerMap[name].push(row);
+    });
+    playerNames = Object.keys(playerMap).sort();
+
+    // Compute global min/max for radar normalization
+    const radarStats = ['SG OTT','SG APP','SG ARG','SG PUTT','SCRAMBLING','GIR'];
+    radarStats.forEach(stat => {
+      const vals = [];
+      for (const name of playerNames) {
+        const v = avg(playerMap[name].map(r => num(r[stat])));
+        if (v !== null) vals.push(v);
+      }
+      globalStats[stat] = { min: Math.min(...vals), max: Math.max(...vals) };
+    });
+
+    document.getElementById('loadingArea').style.display = 'none';
+    document.getElementById('emptyState').style.display = 'block';
+  } catch (err) {
+    document.getElementById('loadingArea').style.display = 'none';
+    const ea = document.getElementById('errorArea');
+    ea.style.display = 'block';
+    ea.innerHTML = `<div class="error-box">Failed to load data: ${err.message}</div>`;
+  }
+}
+
+// ---------- Search / Dropdown ----------
+function setupSearch(inputId, dropId, clearId, side) {
+  const input = document.getElementById(inputId);
+  const drop = document.getElementById(dropId);
+  const clearBtn = document.getElementById(clearId);
+
+  input.addEventListener('input', () => {
+    const q = input.value.trim().toUpperCase();
+    if (!q) { drop.classList.remove('open'); return; }
+    const matches = playerNames.filter(n => n.includes(q)).slice(0, 40);
+    if (!matches.length) { drop.classList.remove('open'); return; }
+    drop.innerHTML = matches.map(n =>
+      `<div class="dropdown-item" data-name="${n}">${formatPlayerName(n)}</div>`
+    ).join('');
+    drop.classList.add('open');
+  });
+
+  drop.addEventListener('click', (e) => {
+    const item = e.target.closest('.dropdown-item');
+    if (!item) return;
+    const name = item.dataset.name;
+    input.value = formatPlayerName(name);
+    input.classList.add(side === 'a' ? 'selected-a' : 'selected-b');
+    drop.classList.remove('open');
+    clearBtn.classList.add('visible');
+    input.readOnly = true;
+    if (side === 'a') selectedA = name; else selectedB = name;
+    tryCompare();
+  });
+
+  clearBtn.addEventListener('click', () => {
+    input.value = '';
+    input.readOnly = false;
+    input.classList.remove('selected-a', 'selected-b');
+    clearBtn.classList.remove('visible');
+    if (side === 'a') selectedA = null; else selectedB = null;
+    tryCompare();
+    input.focus();
+  });
+
+  document.addEventListener('click', (e) => {
+    if (!e.target.closest('.search-box')) drop.classList.remove('open');
+  });
+}
+
+// ---------- Player Stats ----------
+function getPlayerStats(name) {
+  const rows = playerMap[name] || [];
+  const sorted = [...rows].sort((a, b) => eventSortKey(a.EVENT) - eventSortKey(b.EVENT));
+  return {
+    name,
+    rows: sorted,
+    events: rows.length,
+    sgTotal: avg(rows.map(r => num(r['SG TOTAL']))),
+    sgOTT: avg(rows.map(r => num(r['SG OTT']))),
+    sgAPP: avg(rows.map(r => num(r['SG APP']))),
+    sgARG: avg(rows.map(r => num(r['SG ARG']))),
+    sgPUTT: avg(rows.map(r => num(r['SG PUTT']))),
+    sgT2G: avg(rows.map(r => num(r['SG T2G']))),
+    sgBS: avg(rows.map(r => num(r['SG BS']))),
+    distance: avg(rows.map(r => num(r['D. DISTANCE']))),
+    accuracy: avg(rows.map(r => num(r['D. ACCURACY']))),
+    gir: avg(rows.map(r => num(r['GIR']))),
+    scrambling: avg(rows.map(r => num(r['SCRAMBLING']))),
+    sgTotalByEvent: sorted.map(r => ({ event: r.EVENT, val: num(r['SG TOTAL']) })),
+    sgTotalArr: rows.map(r => num(r['SG TOTAL'])),
+  };
+}
+
+// ---------- Comparison Render ----------
+function tryCompare() {
+  const content = document.getElementById('comparisonContent');
+  const empty = document.getElementById('emptyState');
+
+  if (!selectedA || !selectedB) {
+    content.style.display = 'none';
+    empty.style.display = 'block';
+    destroyCharts();
+    return;
+  }
+
+  empty.style.display = 'none';
+  content.style.display = 'block';
+
+  const a = getPlayerStats(selectedA);
+  const b = getPlayerStats(selectedB);
+
+  const nameA = formatPlayerName(a.name);
+  const nameB = formatPlayerName(b.name);
+
+  let html = '';
+
+  // Section 1 — Header Cards
+  html += `<section>
+    <div class="section-title">Player Overview</div>
+    <div class="header-cards">
+      ${playerCard(a, nameA, 'card-a')}
+      ${playerCard(b, nameB, 'card-b')}
+    </div>
+  </section>`;
+
+  // Section 2 — Radar Chart
+  html += `<section>
+    <div class="section-title">Skill Radar</div>
+    <div class="radar-wrap">
+      <div class="chart-container"><canvas id="radarCanvas"></canvas></div>
+    </div>
+  </section>`;
+
+  // Section 3 — Head to Head Bars
+  html += `<section>
+    <div class="section-title">Head to Head</div>
+    ${h2hBars(a, b)}
+  </section>`;
+
+  // Section 4 — Form Comparison
+  html += `<section>
+    <div class="section-title">Form Comparison</div>
+    <div class="chart-container"><canvas id="formCanvas"></canvas></div>
+  </section>`;
+
+  // Section 5 — Event Overlap Table
+  html += `<section>
+    <div class="section-title">Event Overlap</div>
+    ${overlapTable(a, b, nameA, nameB)}
+  </section>`;
+
+  // Section 6 — Summary Verdict
+  html += `<section>
+    <div class="section-title">Summary Verdict</div>
+    ${verdictSection(a, b, nameA, nameB)}
+  </section>`;
+
+  content.innerHTML = html;
+
+  // Render charts after DOM update
+  requestAnimationFrame(() => {
+    renderRadar(a, b, nameA, nameB);
+    renderFormChart(a, b, nameA, nameB);
+  });
+}
+
+function playerCard(p, displayName, cls) {
+  return `<div class="player-card ${cls}">
+    <div class="pname">${displayName}</div>
+    <div class="stat-grid">
+      <div class="stat-cell"><div class="stat-val">${p.events}</div><div class="stat-label">Events</div></div>
+      <div class="stat-cell"><div class="stat-val">${fmtVal(p.sgTotal)}</div><div class="stat-label">Avg SG Total</div></div>
+      <div class="stat-cell"><div class="stat-val">${fmtVal(p.distance, 1)}</div><div class="stat-label">Avg Distance</div></div>
+      <div class="stat-cell"><div class="stat-val">${fmtVal(p.accuracy, 1)}%</div><div class="stat-label">Accuracy</div></div>
+      <div class="stat-cell"><div class="stat-val">${fmtVal(p.gir, 1)}%</div><div class="stat-label">GIR</div></div>
+      <div class="stat-cell"><div class="stat-val">${fmtVal(p.scrambling, 1)}%</div><div class="stat-label">Scrambling</div></div>
+    </div>
+  </div>`;
+}
+
+// ---------- Head to Head Bars ----------
+function h2hBars(a, b) {
+  const stats = [
+    { key: 'sgOTT', label: 'SG OTT' },
+    { key: 'sgAPP', label: 'SG APP' },
+    { key: 'sgARG', label: 'SG ARG' },
+    { key: 'sgPUTT', label: 'SG PUTT' },
+    { key: 'sgT2G', label: 'SG T2G' },
+    { key: 'sgBS', label: 'SG BS' },
+  ];
+
+  // Find the max absolute value across all stats for scaling
+  let maxAbs = 0;
+  stats.forEach(s => {
+    if (a[s.key] !== null) maxAbs = Math.max(maxAbs, Math.abs(a[s.key]));
+    if (b[s.key] !== null) maxAbs = Math.max(maxAbs, Math.abs(b[s.key]));
+  });
+  if (maxAbs === 0) maxAbs = 1;
+
+  return stats.map(s => {
+    const va = a[s.key];
+    const vb = b[s.key];
+    const widthA = va !== null ? Math.min(Math.abs(va) / maxAbs * 48, 48) : 0;
+    const widthB = vb !== null ? Math.min(Math.abs(vb) / maxAbs * 48, 48) : 0;
+
+    const valAStr = va !== null ? (va > 0 ? '+' : '') + va.toFixed(2) : '—';
+    const valBStr = vb !== null ? (vb > 0 ? '+' : '') + vb.toFixed(2) : '—';
+
+    // If bar is too narrow, show value outside
+    const minBarForLabel = 8;
+    const aInside = widthA >= minBarForLabel;
+    const bInside = widthB >= minBarForLabel;
+
+    const aValHtml = aInside
+      ? `<span class="h2h-val">${valAStr}</span>`
+      : '';
+    const bValHtml = bInside
+      ? `<span class="h2h-val">${valBStr}</span>`
+      : '';
+
+    const aOutHtml = !aInside
+      ? `<span class="h2h-val-outside val-a" style="right:calc(50% + ${widthA}% + 6px);">${valAStr}</span>`
+      : '';
+    const bOutHtml = !bInside
+      ? `<span class="h2h-val-outside val-b" style="left:calc(50% + ${widthB}% + 6px);">${valBStr}</span>`
+      : '';
+
+    return `<div class="h2h-row">
+      <div class="h2h-label">${s.label}</div>
+      <div class="h2h-track">
+        <div class="h2h-center"></div>
+        <div class="h2h-bar bar-a" style="width:${widthA}%;">${aValHtml}</div>
+        <div class="h2h-bar bar-b" style="width:${widthB}%;">${bValHtml}</div>
+        ${aOutHtml}${bOutHtml}
+      </div>
+    </div>`;
+  }).join('');
+}
+
+// ---------- Overlap Table ----------
+function overlapTable(a, b, nameA, nameB) {
+  // Find events both players share
+  const aEvents = {};
+  a.rows.forEach(r => { aEvents[r.EVENT] = r; });
+  const shared = [];
+  b.rows.forEach(r => {
+    if (aEvents[r.EVENT]) {
+      shared.push({ event: r.EVENT, rowA: aEvents[r.EVENT], rowB: r });
+    }
+  });
+  shared.sort((x, y) => eventSortKey(x.event) - eventSortKey(y.event));
+
+  if (!shared.length) {
+    return `<div class="no-overlap">No shared events between these players</div>`;
+  }
+
+  let rows = shared.map(s => {
+    const sgA = num(s.rowA['SG TOTAL']);
+    const sgB = num(s.rowB['SG TOTAL']);
+    let cls = '';
+    if (sgA !== null && sgB !== null) {
+      cls = sgA > sgB ? 'winner-a' : sgB > sgA ? 'winner-b' : '';
+    }
+    return `<tr class="${cls}">
+      <td>${s.event}</td>
+      <td class="col-a">${s.rowA.POS || '—'}</td>
+      <td class="col-a">${fmtSG(sgA)}</td>
+      <td class="col-b">${fmtSG(sgB)}</td>
+      <td class="col-b">${s.rowB.POS || '—'}</td>
+    </tr>`;
+  }).join('');
+
+  return `<table class="overlap-table">
+    <thead><tr>
+      <th>Event</th>
+      <th style="color:#2f81f7;">${nameA} Pos</th>
+      <th style="color:#2f81f7;">${nameA} SG Total</th>
+      <th style="color:#f0883e;">${nameB} SG Total</th>
+      <th style="color:#f0883e;">${nameB} Pos</th>
+    </tr></thead>
+    <tbody>${rows}</tbody>
+  </table>`;
+}
+
+// ---------- Verdict ----------
+function verdictSection(a, b, nameA, nameB) {
+  // 1. Categories won
+  const cats = [
+    { key: 'sgOTT', label: 'SG OTT' },
+    { key: 'sgAPP', label: 'SG APP' },
+    { key: 'sgARG', label: 'SG ARG' },
+    { key: 'sgPUTT', label: 'SG PUTT' },
+    { key: 'sgT2G', label: 'SG T2G' },
+    { key: 'sgBS', label: 'SG BS' },
+  ];
+  let aWins = 0, bWins = 0;
+  cats.forEach(c => {
+    if (a[c.key] !== null && b[c.key] !== null) {
+      if (a[c.key] > b[c.key]) aWins++;
+      else if (b[c.key] > a[c.key]) bWins++;
+    }
+  });
+
+  let catPill, catText;
+  if (aWins > bWins) { catPill = 'pill-a'; catText = `${nameA} leads in ${aWins} of 6 categories`; }
+  else if (bWins > aWins) { catPill = 'pill-b'; catText = `${nameB} leads in ${bWins} of 6 categories`; }
+  else { catPill = 'pill-tie'; catText = `Tied — ${aWins} categories each`; }
+
+  // 2. Recent form — last 3 events by chronological order
+  const lastN = 3;
+  const recentA = a.sgTotalByEvent.slice(-lastN).map(e => e.val);
+  const recentB = b.sgTotalByEvent.slice(-lastN).map(e => e.val);
+  const recentAvgA = avg(recentA);
+  const recentAvgB = avg(recentB);
+
+  let formPill, formText;
+  if (recentAvgA !== null && recentAvgB !== null) {
+    if (recentAvgA > recentAvgB) { formPill = 'pill-a'; formText = `${nameA} — better recent form`; }
+    else if (recentAvgB > recentAvgA) { formPill = 'pill-b'; formText = `${nameB} — better recent form`; }
+    else { formPill = 'pill-tie'; formText = 'Tied on recent form'; }
+  } else {
+    formPill = 'pill-tie'; formText = 'Insufficient data for form comparison';
+  }
+
+  // 3. Consistency — lower stddev wins
+  const sdA = stddev(a.sgTotalArr);
+  const sdB = stddev(b.sgTotalArr);
+
+  let consPill, consText;
+  if (sdA !== null && sdB !== null) {
+    if (sdA < sdB) { consPill = 'pill-a'; consText = `${nameA} — more consistent`; }
+    else if (sdB < sdA) { consPill = 'pill-b'; consText = `${nameB} — more consistent`; }
+    else { consPill = 'pill-tie'; consText = 'Equally consistent'; }
+  } else {
+    consPill = 'pill-tie'; consText = 'Insufficient data for consistency';
+  }
+
+  return `<div class="verdict-row">
+    <div class="verdict-pill ${catPill}">${catText}</div>
+    <div class="verdict-pill ${formPill}">${formText}</div>
+    <div class="verdict-pill ${consPill}">${consText}</div>
+  </div>`;
+}
+
+// ---------- Charts ----------
+function destroyCharts() {
+  if (radarChart) { radarChart.destroy(); radarChart = null; }
+  if (formChart) { formChart.destroy(); formChart = null; }
+}
+
+function renderRadar(a, b, nameA, nameB) {
+  if (radarChart) { radarChart.destroy(); radarChart = null; }
+  const canvas = document.getElementById('radarCanvas');
+  if (!canvas) return;
+
+  const stats = [
+    { key: 'sgOTT', label: 'SG OTT', csvKey: 'SG OTT' },
+    { key: 'sgAPP', label: 'SG APP', csvKey: 'SG APP' },
+    { key: 'sgARG', label: 'SG ARG', csvKey: 'SG ARG' },
+    { key: 'sgPUTT', label: 'SG PUTT', csvKey: 'SG PUTT' },
+    { key: 'scrambling', label: 'Scrambling', csvKey: 'SCRAMBLING' },
+    { key: 'gir', label: 'GIR', csvKey: 'GIR' },
+  ];
+
+  // Normalize to 0-1 range using global min/max
+  function normalize(val, stat) {
+    const g = globalStats[stat.csvKey];
+    if (!g || val === null) return 0;
+    const range = g.max - g.min;
+    if (range === 0) return 0.5;
+    return (val - g.min) / range;
+  }
+
+  const dataA = stats.map(s => normalize(a[s.key], s));
+  const dataB = stats.map(s => normalize(b[s.key], s));
+
+  radarChart = new Chart(canvas, {
+    type: 'radar',
+    data: {
+      labels: stats.map(s => s.label),
+      datasets: [
+        {
+          label: nameA,
+          data: dataA,
+          borderColor: '#2f81f7',
+          backgroundColor: 'rgba(88, 166, 255, 0.3)',
+          borderWidth: 2,
+          pointBackgroundColor: '#2f81f7',
+          pointRadius: 4,
+        },
+        {
+          label: nameB,
+          data: dataB,
+          borderColor: '#f0883e',
+          backgroundColor: 'rgba(240, 136, 62, 0.3)',
+          borderWidth: 2,
+          pointBackgroundColor: '#f0883e',
+          pointRadius: 4,
+        }
+      ]
+    },
+    options: {
+      responsive: true,
+      plugins: {
+        legend: {
+          labels: { color: '#e8edf2', font: { size: 13 } }
+        },
+        tooltip: {
+          callbacks: {
+            label: function(ctx) {
+              const stat = stats[ctx.dataIndex];
+              const player = ctx.datasetIndex === 0 ? a : b;
+              const raw = player[stat.key];
+              return `${ctx.dataset.label}: ${raw !== null ? raw.toFixed(2) : '—'}`;
+            }
+          }
+        }
+      },
+      scales: {
+        r: {
+          min: 0,
+          max: 1,
+          ticks: { display: false },
+          grid: { color: '#1e2530' },
+          angleLines: { color: '#1e2530' },
+          pointLabels: { color: '#5a6478', font: { size: 12 } },
+        }
+      }
+    }
+  });
+}
+
+function renderFormChart(a, b, nameA, nameB) {
+  if (formChart) { formChart.destroy(); formChart = null; }
+  const canvas = document.getElementById('formCanvas');
+  if (!canvas) return;
+
+  // Build a unified set of events in chronological order
+  const allEventsSet = new Set();
+  a.sgTotalByEvent.forEach(e => allEventsSet.add(e.event));
+  b.sgTotalByEvent.forEach(e => allEventsSet.add(e.event));
+  const allEvents = [...allEventsSet].sort((x, y) => eventSortKey(x) - eventSortKey(y));
+
+  const aMap = {};
+  a.sgTotalByEvent.forEach(e => { aMap[e.event] = e.val; });
+  const bMap = {};
+  b.sgTotalByEvent.forEach(e => { bMap[e.event] = e.val; });
+
+  const dataA = allEvents.map(e => aMap[e] !== undefined ? aMap[e] : null);
+  const dataB = allEvents.map(e => bMap[e] !== undefined ? bMap[e] : null);
+
+  formChart = new Chart(canvas, {
+    type: 'line',
+    data: {
+      labels: allEvents,
+      datasets: [
+        {
+          label: nameA,
+          data: dataA,
+          borderColor: '#2f81f7',
+          backgroundColor: 'rgba(47,129,247,0.1)',
+          borderWidth: 2,
+          pointBackgroundColor: '#2f81f7',
+          pointRadius: 5,
+          pointHoverRadius: 7,
+          spanGaps: false,
+          tension: 0.1,
+        },
+        {
+          label: nameB,
+          data: dataB,
+          borderColor: '#f0883e',
+          backgroundColor: 'rgba(240,136,62,0.1)',
+          borderWidth: 2,
+          pointBackgroundColor: '#f0883e',
+          pointRadius: 5,
+          pointHoverRadius: 7,
+          spanGaps: false,
+          tension: 0.1,
+        }
+      ]
+    },
+    options: {
+      responsive: true,
+      plugins: {
+        legend: {
+          labels: { color: '#e8edf2', font: { size: 13 } }
+        },
+        tooltip: {
+          callbacks: {
+            title: (items) => items[0].label,
+            label: (ctx) => {
+              const v = ctx.raw;
+              if (v === null) return null;
+              const prefix = v > 0 ? '+' : '';
+              return `${ctx.dataset.label}: ${prefix}${v.toFixed(2)}`;
+            }
+          }
+        }
+      },
+      scales: {
+        x: {
+          ticks: { color: '#5a6478', font: { size: 11 } },
+          grid: { color: '#1e2530' },
+        },
+        y: {
+          ticks: {
+            color: '#5a6478',
+            callback: v => (v > 0 ? '+' : '') + v.toFixed(1)
+          },
+          grid: { color: '#1e2530' },
+        }
+      }
+    }
+  });
+}
+
+// ---------- Init ----------
+setupSearch('searchA', 'dropA', 'clearA', 'a');
+setupSearch('searchB', 'dropB', 'clearB', 'b');
+loadData();
+</script>
+</body>
+</html>

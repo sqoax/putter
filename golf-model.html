@@ -1,0 +1,1166 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Putter — Weekly Model</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: #080c10;
+    color: #e8edf2;
+    font-family: system-ui, -apple-system, sans-serif;
+    font-size: 16px;
+    line-height: 1.5;
+    min-height: 100vh;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  .navbar {
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    background: rgba(8, 12, 16, 0.85);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border-bottom: 1px solid #1e2530;
+    height: 64px;
+    display: flex;
+    align-items: center;
+    padding: 0 32px;
+  }
+
+  .nav-inner {
+    max-width: 1320px;
+    width: 100%;
+    margin: 0 auto;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+  }
+
+  .nav-left {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-shrink: 0;
+  }
+
+  .nav-wordmark {
+    font-size: 20px;
+    font-weight: 700;
+    color: #fff;
+    letter-spacing: -0.02em;
+    text-decoration: none;
+  }
+
+  .nav-free-badge {
+    font-size: 10px;
+    font-weight: 600;
+    color: #2f81f7;
+    background: rgba(47, 129, 247, 0.1);
+    border: 1px solid rgba(47, 129, 247, 0.25);
+    padding: 2px 7px;
+    border-radius: 20px;
+    letter-spacing: 0.02em;
+  }
+
+  .nav-tabs {
+    display: flex;
+    gap: 6px;
+    align-items: center;
+  }
+
+  .nav-tab {
+    font-size: 13px;
+    font-weight: 500;
+    color: #5a6478;
+    text-decoration: none;
+    padding: 6px 14px;
+    border-radius: 20px;
+    background: #0d1117;
+    border: 1px solid #1e2530;
+    transition: border-color 0.15s, color 0.15s;
+    white-space: nowrap;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+  }
+
+  .nav-tab:hover {
+    border-color: #2f81f7;
+    color: #e8edf2;
+  }
+
+  .nav-tab.active {
+    border-color: #2f81f7;
+    color: #e8edf2;
+    background: #111827;
+  }
+
+  .top-bar {
+    max-width: 1320px;
+    margin: 0 auto;
+    padding: 28px 24px 0;
+  }
+
+  h1 {
+    font-size: 36px;
+    font-weight: 700;
+    letter-spacing: -0.03em;
+    line-height: 1.05;
+    margin-bottom: 8px;
+    color: #fff;
+  }
+  .page-sub {
+    font-size: 15px;
+    color: #5a6478;
+    margin-bottom: 18px;
+    max-width: 680px;
+  }
+
+  .shell {
+    max-width: 1320px;
+    margin: 0 auto;
+    padding: 0 24px 40px;
+    display: grid;
+    grid-template-columns: 380px 1fr;
+    gap: 20px;
+    align-items: start;
+  }
+
+  /* --- panels --- */
+  .panel {
+    border: 1px solid #1e2530;
+    border-radius: 10px;
+    background: #0d1117;
+    overflow: hidden;
+  }
+
+  .panel-head {
+    padding: 12px 16px;
+    font-size: 12px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: .04em;
+    color: #5a6478;
+    border-bottom: 1px solid #1e2530;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+
+  .panel-body { padding: 16px; }
+
+  /* --- field selector --- */
+  .field-btn-group {
+    display: flex;
+    gap: 6px;
+    margin-bottom: 12px;
+  }
+  .field-toggle-btn {
+    flex: 1;
+    padding: 8px 10px;
+    font-size: 12px;
+    font-weight: 600;
+    border-radius: 6px;
+    cursor: pointer;
+    border: 1px solid #1e2530;
+    background: #111827;
+    color: #5a6478;
+    transition: all .15s;
+    text-align: center;
+  }
+  .field-toggle-btn:hover { border-color: #5a6478; color: #e8edf2; }
+  .field-toggle-btn.active {
+    background: #1c2333;
+    border-color: #2f81f7;
+    color: #2f81f7;
+  }
+  .field-toggle-btn.active-green {
+    background: #122117;
+    border-color: #3fb950;
+    color: #3fb950;
+  }
+
+  textarea {
+    width: 100%;
+    min-height: 80px;
+    background: #0d1117;
+    border: 1px solid #1e2530;
+    border-radius: 6px;
+    color: #e8edf2;
+    font-size: 13px;
+    font-family: inherit;
+    padding: 10px 12px;
+    resize: vertical;
+    outline: none;
+    transition: border-color .15s;
+  }
+  textarea::placeholder { color: #5a6478; }
+  textarea:focus { border-color: #2f81f7; }
+
+  .field-btns {
+    display: flex;
+    gap: 8px;
+    margin-top: 10px;
+  }
+
+  .field-btn {
+    flex: 1;
+    padding: 8px 14px;
+    background: #2f81f7;
+    border: 1px solid #2f81f766;
+    border-radius: 6px;
+    color: #fff;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background .15s;
+  }
+  .field-btn:hover { background: #4090f8; }
+
+  .field-btn.secondary {
+    background: #111827;
+    border-color: #1e2530;
+    color: #e8edf2;
+  }
+  .field-btn.secondary:hover { background: #1e2530; border-color: #5a6478; }
+
+  .match-info {
+    margin-top: 10px;
+    font-size: 12px;
+    color: #5a6478;
+    display: flex;
+    gap: 12px;
+  }
+  .match-info .good { color: #3fb950; }
+  .match-info .bad { color: #f85149; }
+
+  .unmatched-box {
+    margin-top: 8px;
+    max-height: 90px;
+    overflow-y: auto;
+    font-size: 11px;
+    color: #f85149;
+    background: #1c1208;
+    border: 1px solid #bb800933;
+    border-radius: 4px;
+    padding: 6px 10px;
+  }
+  .unmatched-box::-webkit-scrollbar { width: 4px; }
+  .unmatched-box::-webkit-scrollbar-thumb { background: #1e2530; border-radius: 2px; }
+
+  .field-mode-badge {
+    display: inline-block;
+    font-size: 11px;
+    font-weight: 500;
+    padding: 2px 8px;
+    border-radius: 10px;
+    text-transform: none;
+    letter-spacing: 0;
+  }
+  .field-mode-badge.all { background: #1c2333; color: #2f81f7; }
+  .field-mode-badge.filtered { background: #122117; color: #3fb950; }
+
+  /* --- weight inputs --- */
+  .weight-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 7px 0;
+    border-bottom: 1px solid #1e2530;
+  }
+  .weight-row:last-child { border-bottom: none; }
+
+  .weight-label {
+    font-size: 13px;
+    font-weight: 500;
+    color: #e8edf2;
+  }
+
+  .weight-input-wrap {
+    display: flex;
+    align-items: center;
+    gap: 2px;
+  }
+
+  .weight-num {
+    width: 56px;
+    padding: 5px 8px;
+    background: #0d1117;
+    border: 1px solid #1e2530;
+    border-radius: 4px;
+    color: #2f81f7;
+    font-size: 13px;
+    font-weight: 600;
+    font-variant-numeric: tabular-nums;
+    text-align: right;
+    outline: none;
+    transition: border-color .15s;
+    -moz-appearance: textfield;
+  }
+  .weight-num::-webkit-inner-spin-button,
+  .weight-num::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
+  .weight-num:focus { border-color: #2f81f7; }
+
+  .weight-pct-sign {
+    font-size: 12px;
+    color: #5a6478;
+  }
+
+  .group-divider {
+    font-size: 11px;
+    color: #bb8009;
+    background: #1c1208;
+    border: 1px solid #bb800933;
+    border-radius: 4px;
+    padding: 6px 10px;
+    margin: 10px 0;
+    line-height: 1.4;
+  }
+
+  .weight-total {
+    margin-top: 12px;
+    padding-top: 10px;
+    border-top: 1px solid #1e2530;
+    font-size: 12px;
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    color: #5a6478;
+  }
+  .weight-total .val { font-weight: 600; }
+  .weight-total .val.ok { color: #3fb950; }
+  .weight-total .val.warn { color: #f85149; }
+  .weight-warning {
+    font-size: 11px;
+    color: #f85149;
+    margin-top: 4px;
+  }
+
+  /* --- min rounds --- */
+  .min-rounds-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 10px 0;
+  }
+  .min-rounds-row label {
+    font-size: 13px;
+    font-weight: 500;
+    color: #e8edf2;
+  }
+  .min-rounds-input {
+    width: 60px;
+    padding: 5px 8px;
+    background: #080c10;
+    border: 1px solid #1e2530;
+    border-radius: 4px;
+    color: #e8edf2;
+    font-size: 13px;
+    font-weight: 600;
+    text-align: right;
+    outline: none;
+    -moz-appearance: textfield;
+  }
+  .min-rounds-input::-webkit-inner-spin-button,
+  .min-rounds-input::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
+  .min-rounds-input:focus { border-color: #2f81f7; }
+
+  /* --- course presets --- */
+  .course-preset-bar {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-bottom: 14px;
+  }
+  .course-preset-btn {
+    padding: 5px 11px;
+    font-size: 11px;
+    font-weight: 500;
+    background: #0d1117;
+    border: 1px solid #1e2530;
+    border-radius: 14px;
+    color: #5a6478;
+    cursor: pointer;
+    transition: all .15s;
+    white-space: nowrap;
+  }
+  .course-preset-btn:hover { border-color: #5a6478; color: #e8edf2; }
+  .course-preset-btn.active {
+    background: #2f81f7;
+    border-color: #2f81f7;
+    color: #fff;
+    font-weight: 600;
+  }
+
+  /* --- user presets --- */
+  .preset-bar {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-top: 10px;
+  }
+
+  .preset-chip {
+    padding: 4px 10px;
+    font-size: 11px;
+    background: #111827;
+    border: 1px solid #1e2530;
+    border-radius: 12px;
+    color: #e8edf2;
+    cursor: pointer;
+    transition: border-color .15s, background .15s;
+    white-space: nowrap;
+  }
+  .preset-chip:hover { border-color: #2f81f7; background: #1c2333; }
+
+  .save-row {
+    display: flex;
+    gap: 6px;
+    margin-top: 10px;
+  }
+
+  .save-row input {
+    flex: 1;
+    padding: 6px 10px;
+    background: #0d1117;
+    border: 1px solid #1e2530;
+    border-radius: 6px;
+    color: #e8edf2;
+    font-size: 12px;
+    outline: none;
+  }
+  .save-row input:focus { border-color: #2f81f7; }
+  .save-row input::placeholder { color: #5a6478; }
+
+  .save-btn {
+    padding: 6px 12px;
+    background: #111827;
+    border: 1px solid #1e2530;
+    border-radius: 6px;
+    color: #e8edf2;
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+    white-space: nowrap;
+    transition: border-color .15s;
+  }
+  .save-btn:hover { border-color: #2f81f7; }
+
+  /* --- right table --- */
+  .table-wrap { overflow-x: auto; }
+
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 13px;
+  }
+
+  thead th {
+    background: #0d1117;
+    color: #5a6478;
+    font-weight: 600;
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: .04em;
+    padding: 10px 10px;
+    text-align: right;
+    border-bottom: 1px solid #1e2530;
+    white-space: nowrap;
+    position: sticky;
+    top: 0;
+    z-index: 1;
+    cursor: pointer;
+    user-select: none;
+    transition: color .15s;
+  }
+  thead th:hover { color: #e8edf2; }
+  thead th.sort-active { color: #2f81f7; }
+  thead th.col-player { text-align: left; }
+
+  .sort-arrow {
+    font-size: 10px;
+    margin-left: 3px;
+  }
+
+  tbody td {
+    padding: 7px 10px;
+    border-bottom: 1px solid #1e2530;
+    white-space: nowrap;
+    text-align: right;
+    font-variant-numeric: tabular-nums;
+  }
+  tbody td.col-player { text-align: left; font-weight: 500; }
+  tbody tr:last-child td { border-bottom: none; }
+  tbody tr:hover td { background: rgba(17, 24, 39, 0.55); }
+
+  .rank-cell { color: #5a6478; font-weight: 600; }
+  .positive { color: #3fb950; }
+  .negative { color: #f85149; }
+  .neutral { color: #5a6478; }
+
+  .rnds-thin { color: #5a6478; }
+  .rnds-normal { color: #e8edf2; }
+  .rnds-reliable { color: #3fb950; }
+
+  .empty-table {
+    padding: 48px 20px;
+    text-align: center;
+    color: #5a6478;
+    font-size: 14px;
+  }
+
+  /* --- loading --- */
+  .loading {
+    display: flex; flex-direction: column; align-items: center;
+    padding: 64px 20px; gap: 14px;
+  }
+  .spinner {
+    width: 28px; height: 28px; border: 3px solid #1e2530; border-top-color: #2f81f7;
+    border-radius: 50%; animation: spin .8s linear infinite;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  .loading-text { color: #5a6478; font-size: 13px; }
+
+  .error-box {
+    padding: 14px; background: #1c1208; border: 1px solid #bb8009;
+    border-radius: 6px; color: #e3b341; font-size: 13px; margin-bottom: 16px;
+  }
+
+  @media (max-width: 900px) {
+    .navbar { padding: 0 20px; }
+    .nav-tabs { display: none; }
+    .top-bar { padding: 22px 20px 0; }
+    h1 { font-size: 30px; }
+    .page-sub { font-size: 14px; }
+    .shell { grid-template-columns: 1fr; }
+    .shell { padding-left: 20px; padding-right: 20px; }
+  }
+</style>
+</head>
+<body>
+
+<nav class="navbar">
+  <div class="nav-inner">
+    <div class="nav-left">
+      <a href="index.html" class="nav-wordmark">PUTTER</a>
+      <span class="nav-free-badge">Free</span>
+    </div>
+    <div class="nav-tabs">
+      <a href="golf-model.html" class="nav-tab active">Weekly Model</a>
+      <a href="golf-profile.html" class="nav-tab">Player Profiles</a>
+      <a href="golf-comparison.html" class="nav-tab">Head to Head</a>
+    </div>
+  </div>
+</nav>
+
+<div class="top-bar">
+  <h1>Weekly Model</h1>
+  <p class="page-sub">Customize weights, tune your field, and rank the board in real time using the same strokes gained framework from the landing experience.</p>
+</div>
+
+<div id="app">
+  <div style="max-width:1320px;margin:0 auto;padding:0 24px;">
+    <div class="loading">
+      <div class="spinner"></div>
+      <div class="loading-text">Loading player database&hellip;</div>
+    </div>
+  </div>
+</div>
+
+<script>
+const CSV_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vTPiodfvBnqD6FVNZXYBsv4KGipr4KYiQA273S64Quj3a9s1_dLaAEma665pM4m-zPRKJzcpkmDDDbN/pub?output=csv';
+
+const COMPONENT_STATS = ['SG OTT','SG APP','SG ARG','SG PUTT','SCRAMBLING','GIR','D. DISTANCE','D. ACCURACY'];
+const COMPOSITE_STATS = ['SG TOTAL','SG T2G','SG BS'];
+const ALL_STAT_KEYS = [...COMPONENT_STATS, ...COMPOSITE_STATS];
+const ALL_AVG_KEYS = [...ALL_STAT_KEYS];
+
+const DISPLAY_COLS = ['SG OTT','SG APP','SG ARG','SG PUTT','SG T2G','SG BS','SCRAMBLING','GIR','D. DISTANCE','D. ACCURACY'];
+
+const THIS_WEEK_FIELD = [
+  'Joel Dahmen','Daniel Bennett','Tom Hoge','Jhonattan Vegas','Ryan Fox',
+  'Billy Horschel','Patrick Rodgers','Brian Campbell','Matt Mccarty','Max Greyserman',
+  'Taylor Moore','Andrew Putnam','Alex Noren','Daniel Berger','Min Woo Lee',
+  'Michael Thorbjornsen','Harry Hall','Corey Conners','Cameron Young','Sepp Straka',
+  'Harris English','Patrick Cantlay','Robert Macintyre','Andrew Novak','Akshay Bhatia',
+  'Brian Harman','Collin Morikawa','Justin Rose','Xander Schauffele','Shane Lowry',
+  'Scottie Scheffler','Russell Henley','Adam Scott','Aldrich Potgieter','J.t. Poston',
+  'Keith Mitchell','Nicolai Hojgaard','Austin Smotherman','Si Woo Kim','Bud Cauley',
+  'Ryo Hisatsune','Lucas Glover','Ryan Gerard','Jason Day','Taylor Pendrith',
+  'Denny Mccarthy','Kurt Kitayama','Pierceson Coody','Jordan Spieth','Sam Stevens',
+  'Matt Fitzpatrick','Jake Knapp','Sam Burns','Sungjae Im','J.j. Spaun',
+  'Nick Taylor','Maverick Mcnealy','Keegan Bradley','Tommy Fleetwood','Ben Griffin',
+  'Ludvig Aberg','Nico Echavarria','Jacob Bridgeman','Chris Gotterup','Hideki Matsuyama',
+  'Justin Thomas','Rory Mcilroy','Viktor Hovland','Rickie Fowler','Michael Kim',
+  'Sahith Theegala','Chris Kirk'
+];
+
+const COURSE_PRESETS = [
+  { name: 'Balanced', weights: { 'SG OTT':18,'SG APP':24,'SG ARG':10,'SG PUTT':12,'SCRAMBLING':8,'GIR':14,'D. DISTANCE':7,'D. ACCURACY':7,'SG TOTAL':0,'SG T2G':0,'SG BS':0 }},
+  { name: 'Bomber Track', weights: { 'SG OTT':17,'SG APP':15,'SG ARG':4,'SG PUTT':9,'SCRAMBLING':3,'GIR':7,'D. DISTANCE':37,'D. ACCURACY':8,'SG TOTAL':0,'SG T2G':0,'SG BS':0 }},
+  { name: 'Approach Heavy', weights: { 'SG OTT':12,'SG APP':32,'SG ARG':8,'SG PUTT':8,'SCRAMBLING':6,'GIR':22,'D. DISTANCE':4,'D. ACCURACY':8,'SG TOTAL':0,'SG T2G':0,'SG BS':0 }},
+  { name: 'Putting Course', weights: { 'SG OTT':8,'SG APP':10,'SG ARG':6,'SG PUTT':38,'SCRAMBLING':6,'GIR':8,'D. DISTANCE':2,'D. ACCURACY':22,'SG TOTAL':0,'SG T2G':0,'SG BS':0 }},
+  { name: 'Scrambler', weights: { 'SG OTT':9,'SG APP':15,'SG ARG':23,'SG PUTT':10,'SCRAMBLING':24,'GIR':6,'D. DISTANCE':2,'D. ACCURACY':11,'SG TOTAL':0,'SG T2G':0,'SG BS':0 }},
+  { name: 'Accuracy Premium', weights: { 'SG OTT':12,'SG APP':22,'SG ARG':6,'SG PUTT':8,'SCRAMBLING':6,'GIR':12,'D. DISTANCE':2,'D. ACCURACY':32,'SG TOTAL':0,'SG T2G':0,'SG BS':0 }},
+  { name: 'Par 5 Scorer', weights: { 'SG OTT':16,'SG APP':24,'SG ARG':4,'SG PUTT':6,'SCRAMBLING':3,'GIR':12,'D. DISTANCE':29,'D. ACCURACY':6,'SG TOTAL':0,'SG T2G':0,'SG BS':0 }},
+];
+
+let rawDB = {};       // all players regardless of min rounds
+let allPlayers = [];  // filtered by minRounds
+let fieldMode = 'all';  // 'all' | 'thisWeek' | 'custom'
+let fieldPlayers = [];
+let unmatched = [];
+let customFieldText = '';
+let minRounds = 8;
+let activePreset = null;  // index into COURSE_PRESETS or null
+
+let weights = {
+  'SG OTT': 15, 'SG APP': 35, 'SG ARG': 20, 'SG PUTT': 20,
+  'SCRAMBLING': 5, 'GIR': 5, 'D. DISTANCE': 0, 'D. ACCURACY': 0,
+  'SG TOTAL': 0, 'SG T2G': 0, 'SG BS': 0
+};
+
+let presets = [];
+let sortCol = 'composite';
+let sortDir = 'desc';
+
+/* ---- CSV ---- */
+function splitCSV(line) {
+  const r = []; let c = '', q = false;
+  for (let i = 0; i < line.length; i++) {
+    const ch = line[i];
+    if (q) { if (ch === '"' && line[i+1] === '"') { c += '"'; i++; } else if (ch === '"') q = false; else c += ch; }
+    else { if (ch === '"') q = true; else if (ch === ',') { r.push(c); c = ''; } else c += ch; }
+  }
+  r.push(c); return r;
+}
+
+function parseCSV(text) {
+  const lines = text.split('\n');
+  const headers = splitCSV(lines[0]).map(h => h.trim());
+  const rows = [];
+  for (let i = 1; i < lines.length; i++) {
+    const l = lines[i].trim(); if (!l) continue;
+    const vals = splitCSV(l);
+    const row = {};
+    headers.forEach((h, idx) => { row[h] = (vals[idx] || '').trim(); });
+    rows.push(row);
+  }
+  return rows;
+}
+
+/* ---- Build DB ---- */
+let csvRows = []; // keep raw rows for re-filtering
+
+function buildRawDB(rows) {
+  const tmp = {};
+  for (const row of rows) {
+    const name = row['PLAYER NAME'];
+    if (!name) continue;
+    if (!tmp[name]) tmp[name] = { rounds: 0, sums: {}, counts: {} };
+    const mc = row['MADE_CUT'];
+    tmp[name].rounds += (mc === 'TRUE' || mc === '1' || mc === 'true') ? 4 : 2;
+    for (const k of ALL_AVG_KEYS) {
+      const v = parseFloat(row[k]);
+      if (!isNaN(v)) {
+        tmp[name].sums[k] = (tmp[name].sums[k] || 0) + v;
+        tmp[name].counts[k] = (tmp[name].counts[k] || 0) + 1;
+      }
+    }
+  }
+  const out = {};
+  for (const [name, d] of Object.entries(tmp)) {
+    const avgs = {};
+    for (const k of ALL_AVG_KEYS) {
+      avgs[k] = d.counts[k] ? d.sums[k] / d.counts[k] : null;
+    }
+    out[name] = { rounds: d.rounds, avgs };
+  }
+  return out;
+}
+
+function filterByMinRounds() {
+  allPlayers = Object.entries(rawDB)
+    .filter(([, d]) => d.rounds >= minRounds)
+    .map(([name, d]) => ({ name, ...d }));
+}
+
+/* ---- Composite scoring ---- */
+function zScores(players, key) {
+  const vals = players.map(p => p.avgs[key]).filter(v => v != null);
+  if (vals.length < 2) return null;
+  const mean = vals.reduce((a, b) => a + b, 0) / vals.length;
+  const sd = Math.sqrt(vals.reduce((s, v) => s + (v - mean) ** 2, 0) / vals.length);
+  return sd > 0 ? { mean, sd } : null;
+}
+
+function computeComposite(players) {
+  const activeKeys = ALL_STAT_KEYS.filter(k => weights[k] > 0);
+  const totalW = activeKeys.reduce((s, k) => s + weights[k], 0);
+  if (totalW === 0) { players.forEach(p => p.composite = 0); return; }
+  const stats = {};
+  for (const k of activeKeys) stats[k] = zScores(players, k);
+  for (const p of players) {
+    let score = 0;
+    for (const k of activeKeys) {
+      const w = weights[k] / totalW;
+      const s = stats[k];
+      const raw = p.avgs[k];
+      if (s && raw != null) score += ((raw - s.mean) / s.sd) * w;
+    }
+    p.composite = score;
+  }
+}
+
+/* ---- Which players to show ---- */
+function getDisplayPlayers() {
+  if (fieldMode === 'thisWeek' || fieldMode === 'custom') return fieldPlayers;
+  return allPlayers;
+}
+
+/* ---- Field matching (case-insensitive) ---- */
+function matchFieldFromList(nameList) {
+  const matched = [], um = [];
+  const seen = new Set();
+  // Build lowercase → actual key lookup
+  const dbLookup = {};
+  for (const key of Object.keys(rawDB)) dbLookup[key.toLowerCase()] = key;
+  for (const name of nameList) {
+    const n = name.trim();
+    if (!n) continue;
+    const nLower = n.toLowerCase();
+    if (seen.has(nLower)) continue;
+    seen.add(nLower);
+    const dbKey = dbLookup[nLower];
+    if (dbKey && rawDB[dbKey].rounds >= minRounds) matched.push({ name: dbKey, ...rawDB[dbKey] });
+    else um.push(n);
+  }
+  return { matched, unmatched: um };
+}
+
+/* ---- Sorting ---- */
+function sortPlayers(players) {
+  const sorted = [...players];
+  const dir = sortDir === 'asc' ? 1 : -1;
+
+  sorted.sort((a, b) => {
+    let va, vb;
+    if (sortCol === 'composite') { va = a.composite; vb = b.composite; }
+    else if (sortCol === 'name') { return dir * a.name.localeCompare(b.name); }
+    else if (sortCol === 'rounds') { va = a.rounds; vb = b.rounds; }
+    else { va = a.avgs[sortCol]; vb = b.avgs[sortCol]; }
+
+    if (va == null && vb == null) return 0;
+    if (va == null) return 1;
+    if (vb == null) return -1;
+    return dir * (va - vb);
+  });
+  return sorted;
+}
+
+/* ---- Formatting ---- */
+function fmtSG(v) {
+  if (v == null) return '<span class="neutral">&mdash;</span>';
+  const n = v.toFixed(2);
+  if (v > 0.005) return `<span class="positive">+${n}</span>`;
+  if (v < -0.005) return `<span class="negative">${n}</span>`;
+  return `<span class="neutral">${n}</span>`;
+}
+function fmtPct(v) {
+  if (v == null) return '<span class="neutral">&mdash;</span>';
+  return `<span class="neutral">${v.toFixed(1)}%</span>`;
+}
+function fmtDist(v) {
+  if (v == null) return '<span class="neutral">&mdash;</span>';
+  return `<span class="neutral">${v.toFixed(1)}</span>`;
+}
+function fmtCell(key, val) {
+  if (key === 'SCRAMBLING' || key === 'GIR' || key === 'D. ACCURACY') return fmtPct(val);
+  if (key === 'D. DISTANCE') return fmtDist(val);
+  return fmtSG(val);
+}
+function fmtComposite(v) {
+  const n = v.toFixed(3);
+  if (v > 0.0005) return `<span class="positive">+${n}</span>`;
+  if (v < -0.0005) return `<span class="negative">${n}</span>`;
+  return `<span class="neutral">${n}</span>`;
+}
+function fmtRounds(r) {
+  if (r >= 20) return `<span class="rnds-reliable">${r}</span>`;
+  if (r >= 12) return `<span class="rnds-normal">${r}</span>`;
+  return `<span class="rnds-thin">${r}</span>`;
+}
+
+/* ---- Column header helper ---- */
+function thHTML(colKey, label) {
+  const isActive = sortCol === colKey;
+  const arrow = isActive ? (sortDir === 'asc' ? '&#9650;' : '&#9660;') : '';
+  const playerCls = colKey === 'name' ? ' col-player' : '';
+  return `<th class="${isActive ? 'sort-active' : ''}${playerCls}" data-sort="${colKey}">${label}${arrow ? `<span class="sort-arrow">${arrow}</span>` : ''}</th>`;
+}
+
+/* ==== RENDER ==== */
+function render() {
+  const displayPlayers = getDisplayPlayers();
+  computeComposite(displayPlayers);
+  const sorted = sortPlayers(displayPlayers);
+
+  const totalW = ALL_STAT_KEYS.reduce((s, k) => s + weights[k], 0);
+  const totalOk = Math.abs(totalW - 100) < 0.5;
+
+  /* ---- Left: Field panel ---- */
+  let fieldStatusHTML = '';
+  if (fieldMode === 'thisWeek' || fieldMode === 'custom') {
+    fieldStatusHTML = `
+      <div class="match-info">
+        <span class="good">${fieldPlayers.length} matched</span>
+        ${unmatched.length > 0 ? `<span class="bad">${unmatched.length} unmatched</span>` : ''}
+      </div>
+      ${unmatched.length > 0 ? `<div class="unmatched-box">${unmatched.join('<br>')}</div>` : ''}`;
+  }
+
+  let customFieldHTML = '';
+  if (fieldMode === 'custom') {
+    customFieldHTML = `
+      <textarea id="fieldInput" placeholder="Paste player names, one per line&#10;e.g. SCHEFFLER SCOTTIE">${customFieldText}</textarea>
+      <div class="field-btns">
+        <button class="field-btn" id="loadCustomBtn">Load Custom Field</button>
+      </div>`;
+  }
+
+  let leftHTML = `
+    <div class="panel" style="margin-bottom:16px;">
+      <div class="panel-head">
+        Field Selection
+        ${fieldMode === 'all'
+          ? '<span class="field-mode-badge all">All Players</span>'
+          : '<span class="field-mode-badge filtered">Filtered</span>'}
+      </div>
+      <div class="panel-body">
+        <div class="field-btn-group">
+          <button class="field-toggle-btn${fieldMode === 'all' ? ' active' : ''}" id="btnAll">All Players</button>
+          <button class="field-toggle-btn${fieldMode === 'thisWeek' ? ' active-green' : ''}" id="btnThisWeek">This Week</button>
+          <button class="field-toggle-btn${fieldMode === 'custom' ? ' active' : ''}" id="btnCustom">Custom Field</button>
+        </div>
+        ${customFieldHTML}
+        ${fieldStatusHTML}
+      </div>
+    </div>
+  `;
+
+  /* ---- Left: Settings panel (min rounds) ---- */
+  leftHTML += `
+    <div class="panel" style="margin-bottom:16px;">
+      <div class="panel-head">Settings</div>
+      <div class="panel-body">
+        <div class="min-rounds-row">
+          <label>Min Rounds</label>
+          <input type="number" class="min-rounds-input" id="minRoundsInput" value="${minRounds}" min="1">
+        </div>
+      </div>
+    </div>
+  `;
+
+  /* ---- Left: Weight inputs panel ---- */
+  let coursePresetsHTML = '<div class="course-preset-bar">';
+  COURSE_PRESETS.forEach((p, i) => {
+    coursePresetsHTML += `<button class="course-preset-btn${activePreset === i ? ' active' : ''}" data-cidx="${i}">${p.name}</button>`;
+  });
+  coursePresetsHTML += '</div>';
+
+  let weightsHTML = '';
+
+  // Component stats
+  for (const k of COMPONENT_STATS) {
+    weightsHTML += `
+      <div class="weight-row">
+        <div class="weight-label">${k}</div>
+        <div class="weight-input-wrap">
+          <input type="number" class="weight-num" min="0" max="100" value="${weights[k]}" data-stat="${k}">
+          <span class="weight-pct-sign">%</span>
+        </div>
+      </div>`;
+  }
+
+  // Divider warning
+  weightsHTML += `<div class="group-divider">&#9888;&#65039; Mixing composite and component stats causes double counting.</div>`;
+
+  // Composite stats
+  for (const k of COMPOSITE_STATS) {
+    weightsHTML += `
+      <div class="weight-row">
+        <div class="weight-label">${k}</div>
+        <div class="weight-input-wrap">
+          <input type="number" class="weight-num" min="0" max="100" value="${weights[k]}" data-stat="${k}">
+          <span class="weight-pct-sign">%</span>
+        </div>
+      </div>`;
+  }
+
+  let presetsHTML = '';
+  if (presets.length > 0) {
+    presetsHTML = `<div class="preset-bar">${presets.map((p, i) =>
+      `<span class="preset-chip" data-idx="${i}">${p.name}</span>`
+    ).join('')}</div>`;
+  }
+
+  leftHTML += `
+    <div class="panel">
+      <div class="panel-head">Stat Weights</div>
+      <div class="panel-body">
+        ${coursePresetsHTML}
+        ${weightsHTML}
+        <div class="weight-total">
+          <span>Total</span>
+          <div>
+            <span class="val ${totalOk ? 'ok' : 'warn'}">${Math.round(totalW)}%</span>
+            ${!totalOk ? '<div class="weight-warning">Weights must sum to 100% for accurate scoring.</div>' : ''}
+          </div>
+        </div>
+        <div class="save-row">
+          <input type="text" id="presetName" placeholder="Preset name&hellip;">
+          <button class="save-btn" id="savePresetBtn">Save</button>
+        </div>
+        ${presetsHTML}
+      </div>
+    </div>
+  `;
+
+  /* ---- Right: Rankings table ---- */
+  let rightHTML = '';
+  if (displayPlayers.length === 0) {
+    rightHTML = `
+      <div class="panel">
+        <div class="panel-head">Rankings</div>
+        <div class="empty-table">No qualifying players found</div>
+      </div>`;
+  } else {
+    const rows = sorted.map((p, i) => `<tr>
+      <td class="rank-cell">${i + 1}</td>
+      <td class="col-player">${p.name}</td>
+      <td>${fmtRounds(p.rounds)}</td>
+      <td>${fmtComposite(p.composite)}</td>
+      ${DISPLAY_COLS.map(k => `<td>${fmtCell(k, p.avgs[k])}</td>`).join('')}
+    </tr>`).join('');
+
+    rightHTML = `
+      <div class="panel">
+        <div class="panel-head">Rankings<span style="font-weight:400;text-transform:none;letter-spacing:0">${sorted.length} players</span></div>
+        <div class="table-wrap" style="max-height:calc(100vh - 140px);overflow-y:auto;">
+          <table>
+            <thead><tr>
+              ${thHTML('rank', '#')}
+              ${thHTML('name', 'Player')}
+              ${thHTML('rounds', 'Rnds')}
+              ${thHTML('composite', 'Composite')}
+              ${DISPLAY_COLS.map(k => thHTML(k, k)).join('')}
+            </tr></thead>
+            <tbody>${rows}</tbody>
+          </table>
+        </div>
+      </div>`;
+  }
+
+  document.getElementById('app').innerHTML = `
+    <div class="shell">
+      <div class="left-col">${leftHTML}</div>
+      <div class="right-col">${rightHTML}</div>
+    </div>
+  `;
+
+  bind();
+}
+
+/* ==== EVENT BINDING ==== */
+function bind() {
+  // Field mode buttons
+  document.getElementById('btnAll').addEventListener('click', () => {
+    fieldMode = 'all';
+    fieldPlayers = [];
+    unmatched = [];
+    render();
+  });
+
+  document.getElementById('btnThisWeek').addEventListener('click', () => {
+    fieldMode = 'thisWeek';
+    const res = matchFieldFromList(THIS_WEEK_FIELD);
+    fieldPlayers = res.matched;
+    unmatched = res.unmatched;
+    render();
+  });
+
+  document.getElementById('btnCustom').addEventListener('click', () => {
+    fieldMode = 'custom';
+    fieldPlayers = [];
+    unmatched = [];
+    render();
+  });
+
+  // Custom field load
+  const loadCustomBtn = document.getElementById('loadCustomBtn');
+  if (loadCustomBtn) {
+    loadCustomBtn.addEventListener('click', () => {
+      customFieldText = document.getElementById('fieldInput').value;
+      if (!customFieldText.trim()) return;
+      const lines = customFieldText.split('\n').map(l => l.trim()).filter(Boolean);
+      const res = matchFieldFromList(lines);
+      fieldPlayers = res.matched;
+      unmatched = res.unmatched;
+      render();
+    });
+  }
+
+  // Min rounds
+  const minRoundsInput = document.getElementById('minRoundsInput');
+  const commitMinRounds = () => {
+    let val = parseInt(minRoundsInput.value);
+    if (isNaN(val) || val < 1) val = 1;
+    minRounds = val;
+    filterByMinRounds();
+    // Re-match field if active
+    if (fieldMode === 'thisWeek') {
+      const res = matchFieldFromList(THIS_WEEK_FIELD);
+      fieldPlayers = res.matched;
+      unmatched = res.unmatched;
+    } else if (fieldMode === 'custom' && customFieldText.trim()) {
+      const lines = customFieldText.split('\n').map(l => l.trim()).filter(Boolean);
+      const res = matchFieldFromList(lines);
+      fieldPlayers = res.matched;
+      unmatched = res.unmatched;
+    }
+    render();
+  };
+  minRoundsInput.addEventListener('change', commitMinRounds);
+  minRoundsInput.addEventListener('keydown', e => {
+    if (e.key === 'Enter') { e.preventDefault(); commitMinRounds(); }
+  });
+
+  // Course preset buttons
+  document.querySelectorAll('.course-preset-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const idx = parseInt(btn.dataset.cidx);
+      activePreset = idx;
+      weights = { ...COURSE_PRESETS[idx].weights };
+      render();
+    });
+  });
+
+  // Weight inputs — live update
+  document.querySelectorAll('.weight-num').forEach(inp => {
+    const update = () => {
+      const stat = inp.dataset.stat;
+      let val = parseInt(inp.value);
+      if (isNaN(val)) val = 0;
+      if (val < 0) val = 0;
+      if (val > 100) val = 100;
+      weights[stat] = val;
+      // Deselect course preset on manual edit
+      if (activePreset !== null) {
+        activePreset = null;
+        document.querySelectorAll('.course-preset-btn').forEach(b => b.classList.remove('active'));
+      }
+      updateTableAndTotal();
+    };
+    inp.addEventListener('input', update);
+  });
+
+  // Save preset
+  document.getElementById('savePresetBtn').addEventListener('click', () => {
+    const nameEl = document.getElementById('presetName');
+    const name = nameEl.value.trim();
+    if (!name) return;
+    presets.push({ name, weights: { ...weights } });
+    render();
+  });
+
+  // Load presets
+  document.querySelectorAll('.preset-chip').forEach(chip => {
+    chip.addEventListener('click', () => {
+      const idx = parseInt(chip.dataset.idx);
+      weights = { ...presets[idx].weights };
+      render();
+    });
+  });
+
+  // Sortable column headers
+  document.querySelectorAll('thead th[data-sort]').forEach(th => {
+    th.addEventListener('click', () => {
+      const col = th.dataset.sort;
+      if (col === 'rank') return; // rank is just a sequential number
+      if (sortCol === col) {
+        sortDir = sortDir === 'desc' ? 'asc' : 'desc';
+      } else {
+        sortCol = col;
+        sortDir = (col === 'name') ? 'asc' : 'desc';
+      }
+      render();
+    });
+  });
+}
+
+/* ---- Update table + total without full re-render (keeps input focus) ---- */
+function updateTableAndTotal() {
+  // Update total display
+  const totalW = ALL_STAT_KEYS.reduce((s, k) => s + weights[k], 0);
+  const totalOk = Math.abs(totalW - 100) < 0.5;
+  const totalValEl = document.querySelector('.weight-total .val');
+  if (totalValEl) {
+    totalValEl.textContent = Math.round(totalW) + '%';
+    totalValEl.className = 'val ' + (totalOk ? 'ok' : 'warn');
+  }
+  const warningEl = document.querySelector('.weight-warning');
+  if (!totalOk && !warningEl) {
+    const totalDiv = document.querySelector('.weight-total > div');
+    if (totalDiv) {
+      const w = document.createElement('div');
+      w.className = 'weight-warning';
+      w.textContent = 'Weights must sum to 100% for accurate scoring.';
+      totalDiv.appendChild(w);
+    }
+  } else if (totalOk && warningEl) {
+    warningEl.remove();
+  }
+
+  // Re-compute and re-render rankings table
+  const displayPlayers = getDisplayPlayers();
+  computeComposite(displayPlayers);
+  const sorted = sortPlayers(displayPlayers);
+
+  const tbody = document.querySelector('.right-col tbody');
+  if (tbody && sorted.length > 0) {
+    tbody.innerHTML = sorted.map((p, i) => `<tr>
+      <td class="rank-cell">${i + 1}</td>
+      <td class="col-player">${p.name}</td>
+      <td>${fmtRounds(p.rounds)}</td>
+      <td>${fmtComposite(p.composite)}</td>
+      ${DISPLAY_COLS.map(k => `<td>${fmtCell(k, p.avgs[k])}</td>`).join('')}
+    </tr>`).join('');
+  }
+}
+
+/* ==== INIT ==== */
+async function init() {
+  try {
+    const res = await fetch(CSV_URL);
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    const text = await res.text();
+    csvRows = parseCSV(text);
+    rawDB = buildRawDB(csvRows);
+    filterByMinRounds();
+    render();
+  } catch (err) {
+    document.getElementById('app').innerHTML =
+      `<div style="max-width:1320px;margin:0 auto;padding:0 24px;"><div class="error-box">Failed to load data: ${err.message}</div></div>`;
+  }
+}
+
+init();
+</script>
+</body>
+</html>

@@ -1,0 +1,783 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Putter — Player Profiles</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: #080c10;
+    color: #e8edf2;
+    font-family: system-ui, -apple-system, sans-serif;
+    font-size: 16px;
+    line-height: 1.5;
+    min-height: 100vh;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  .navbar {
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    background: rgba(8, 12, 16, 0.85);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border-bottom: 1px solid #1e2530;
+    height: 64px;
+    display: flex;
+    align-items: center;
+    padding: 0 32px;
+  }
+
+  .nav-inner {
+    max-width: 1100px;
+    width: 100%;
+    margin: 0 auto;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+  }
+
+  .nav-left {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-shrink: 0;
+  }
+
+  .nav-wordmark {
+    font-size: 20px;
+    font-weight: 700;
+    color: #fff;
+    letter-spacing: -0.02em;
+    text-decoration: none;
+  }
+
+  .nav-free-badge {
+    font-size: 10px;
+    font-weight: 600;
+    color: #2f81f7;
+    background: rgba(47, 129, 247, 0.1);
+    border: 1px solid rgba(47, 129, 247, 0.25);
+    padding: 2px 7px;
+    border-radius: 20px;
+    letter-spacing: 0.02em;
+  }
+
+  .nav-tabs {
+    display: flex;
+    gap: 6px;
+    align-items: center;
+  }
+
+  .nav-tab {
+    font-size: 13px;
+    font-weight: 500;
+    color: #5a6478;
+    text-decoration: none;
+    padding: 6px 14px;
+    border-radius: 20px;
+    background: #0d1117;
+    border: 1px solid #1e2530;
+    transition: border-color 0.15s, color 0.15s;
+    white-space: nowrap;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+  }
+
+  .nav-tab:hover {
+    border-color: #2f81f7;
+    color: #e8edf2;
+  }
+
+  .nav-tab.active {
+    border-color: #2f81f7;
+    color: #e8edf2;
+    background: #111827;
+  }
+
+  .container { max-width: 1100px; margin: 0 auto; padding: 30px 32px 40px; }
+
+  h1 {
+    font-size: 36px;
+    font-weight: 700;
+    letter-spacing: -0.03em;
+    line-height: 1.05;
+    margin-bottom: 8px;
+    color: #fff;
+  }
+  .page-sub { font-size: 15px; color: #5a6478; margin-bottom: 22px; }
+
+  /* --- Search view --- */
+  .search-wrap { position: relative; margin-bottom: 12px; }
+  .search-wrap svg {
+    position: absolute; left: 12px; top: 50%; transform: translateY(-50%);
+    color: #5a6478; pointer-events: none;
+  }
+  .search-wrap input {
+    width: 100%; padding: 10px 12px 10px 36px;
+    background: #0d1117; border: 1px solid #1e2530; border-radius: 10px;
+    color: #e8edf2; font-size: 14px; outline: none; transition: border-color .15s;
+  }
+  .search-wrap input::placeholder { color: #5a6478; }
+  .search-wrap input:focus { border-color: #2f81f7; }
+
+  .player-list {
+    border: 1px solid #1e2530; border-radius: 10px; overflow: hidden;
+    max-height: 480px; overflow-y: auto;
+  }
+  .player-list::-webkit-scrollbar { width: 6px; }
+  .player-list::-webkit-scrollbar-track { background: #0d1117; }
+  .player-list::-webkit-scrollbar-thumb { background: #1e2530; border-radius: 3px; }
+
+  .player-item {
+    padding: 10px 16px; border-bottom: 1px solid #1e2530;
+    cursor: pointer; font-size: 14px; display: flex; justify-content: space-between;
+    align-items: center; transition: background .1s;
+  }
+  .player-item:last-child { border-bottom: none; }
+  .player-item:hover { background: #111827; }
+  .player-item .name { font-weight: 500; }
+  .player-item .events-badge {
+    font-size: 12px; color: #5a6478; background: #1e2530;
+    padding: 2px 8px; border-radius: 10px;
+  }
+  .list-count { font-size: 12px; color: #5a6478; padding: 8px 16px; background: #0d1117; border-top: 1px solid #1e2530; }
+
+  .no-results { padding: 32px 16px; text-align: center; color: #5a6478; font-size: 14px; }
+
+  /* --- Profile view --- */
+  .back-btn {
+    display: inline-flex; align-items: center; gap: 6px;
+    background: #0d1117; border: 1px solid #1e2530; border-radius: 10px;
+    color: #5a6478; font-size: 13px; padding: 6px 12px; cursor: pointer;
+    margin-bottom: 20px; transition: color .15s, border-color .15s;
+  }
+  .back-btn:hover { color: #e8edf2; border-color: #2f81f7; }
+
+  .profile-header {
+    border: 1px solid #1e2530; border-radius: 10px; padding: 24px;
+    background: #0d1117; margin-bottom: 20px;
+    display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px;
+  }
+  .profile-header .player-name { font-size: 22px; font-weight: 600; }
+  .profile-header .header-stats { display: flex; gap: 16px; flex-wrap: wrap; }
+  .header-stat { text-align: center; min-width: 64px; }
+  .header-stat .label { font-size: 11px; text-transform: uppercase; letter-spacing: .04em; color: #5a6478; }
+  .header-stat .value { font-size: 17px; font-weight: 600; font-variant-numeric: tabular-nums; }
+
+  /* --- Sections --- */
+  .section { margin-bottom: 20px; }
+  .section-title {
+    font-size: 14px; font-weight: 600; color: #5a6478; text-transform: uppercase;
+    letter-spacing: .04em; margin-bottom: 10px;
+  }
+
+  .chart-box {
+    border: 1px solid #1e2530; border-radius: 10px; background: #0d1117;
+    padding: 20px; position: relative;
+  }
+  .chart-box canvas { width: 100% !important; }
+
+  /* --- Stat cards --- */
+  .cards-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  .stat-card {
+    border: 1px solid #1e2530; border-radius: 10px; background: #0d1117; padding: 16px;
+  }
+  .stat-card .card-label {
+    font-size: 11px; text-transform: uppercase; letter-spacing: .04em; color: #5a6478; margin-bottom: 6px;
+  }
+  .stat-card .card-value { font-size: 16px; font-weight: 600; margin-bottom: 2px; }
+  .stat-card .card-detail { font-size: 12px; color: #5a6478; }
+
+  /* --- Table --- */
+  .table-wrap { border: 1px solid #1e2530; border-radius: 10px; overflow-x: auto; }
+  table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  thead th {
+    background: #0d1117; color: #5a6478; font-weight: 600; font-size: 11px;
+    text-transform: uppercase; letter-spacing: .04em; padding: 10px 12px;
+    text-align: left; border-bottom: 1px solid #1e2530; white-space: nowrap;
+  }
+  thead th:not(:first-child) { text-align: right; }
+  tbody td {
+    padding: 9px 12px; border-bottom: 1px solid #1e2530; white-space: nowrap;
+  }
+  tbody td:not(:first-child) { text-align: right; font-variant-numeric: tabular-nums; }
+  tbody tr:last-child td { border-bottom: none; }
+  tbody tr:hover td { background: rgba(17, 24, 39, 0.55); }
+  tr.best-row td { background: rgba(63,185,80,.07); }
+  tr.worst-row td { background: rgba(248,81,73,.07); }
+  tr.best-row:hover td { background: rgba(63,185,80,.12); }
+  tr.worst-row:hover td { background: rgba(248,81,73,.12); }
+
+  .positive { color: #3fb950; }
+  .negative { color: #f85149; }
+  .neutral { color: #5a6478; }
+
+  /* --- Pill toggle --- */
+  .section-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 10px;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+  .pill-toggle {
+    display: inline-flex;
+    background: #111827;
+    border: 1px solid #1e2530;
+    border-radius: 20px;
+    padding: 2px;
+    gap: 2px;
+  }
+  .pill-option {
+    padding: 4px 14px;
+    font-size: 12px;
+    font-weight: 500;
+    border-radius: 16px;
+    cursor: pointer;
+    color: #5a6478;
+    background: transparent;
+    border: none;
+    transition: background .15s, color .15s;
+    white-space: nowrap;
+  }
+  .pill-option:hover { color: #e8edf2; }
+  .pill-option.active {
+    background: #2f81f7;
+    color: #080c10;
+    font-weight: 600;
+  }
+  .table-subtitle {
+    font-size: 11px;
+    color: #5a6478;
+    margin-bottom: 8px;
+  }
+
+  /* --- Loading --- */
+  .loading { display: flex; flex-direction: column; align-items: center; padding: 80px 20px; gap: 16px; }
+  .spinner {
+    width: 32px; height: 32px; border: 3px solid #1e2530; border-top-color: #2f81f7;
+    border-radius: 50%; animation: spin .8s linear infinite;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  .loading-text { color: #5a6478; font-size: 14px; }
+
+  .error {
+    padding: 16px; background: #1c1208; border: 1px solid #bb8009;
+    border-radius: 6px; color: #e3b341; font-size: 14px;
+  }
+
+  @media (max-width: 900px) {
+    .navbar { padding: 0 20px; }
+    .nav-tabs { display: none; }
+    .container { padding: 22px 20px 34px; }
+    h1 { font-size: 30px; }
+    .page-sub { font-size: 14px; }
+  }
+
+  @media (max-width: 600px) {
+    .profile-header { flex-direction: column; align-items: flex-start; }
+    .cards-grid { grid-template-columns: 1fr; }
+    .chart-box { padding: 14px; }
+  }
+</style>
+</head>
+<body>
+<nav class="navbar">
+  <div class="nav-inner">
+    <div class="nav-left">
+      <a href="index.html" class="nav-wordmark">PUTTER</a>
+      <span class="nav-free-badge">Free</span>
+    </div>
+    <div class="nav-tabs">
+      <a href="golf-model.html" class="nav-tab">Weekly Model</a>
+      <a href="golf-profile.html" class="nav-tab active">Player Profiles</a>
+      <a href="golf-comparison.html" class="nav-tab">Head to Head</a>
+    </div>
+  </div>
+</nav>
+<div class="container">
+  <h1>Player Profiles</h1>
+  <p class="page-sub">Search the full database and inspect player-level strokes gained trends, strengths, and event-by-event performance.</p>
+  <div id="app">
+    <div class="loading">
+      <div class="spinner"></div>
+      <div class="loading-text">Loading player data&hellip;</div>
+    </div>
+  </div>
+</div>
+
+<script>
+const CSV_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vTPiodfvBnqD6FVNZXYBsv4KGipr4KYiQA273S64Quj3a9s1_dLaAEma665pM4m-zPRKJzcpkmDDDbN/pub?output=csv';
+
+const EVENT_ORDER = ['Procore','Sanderson','Utah','RSM','Sony','Amex','Farmers','Waste','Pebble','Genesis','Cognizant'];
+const SG_CATS = ['SG OTT','SG APP','SG ARG','SG PUTT'];
+const CAT_LABELS = { 'SG OTT': 'Off the Tee', 'SG APP': 'Approach', 'SG ARG': 'Around Green', 'SG PUTT': 'Putting' };
+const BAR_CATS = ['SG OTT','SG APP','SG ARG','SG PUTT','SG T2G','SG BS'];
+const BAR_LABELS = { 'SG OTT': 'Off the Tee', 'SG APP': 'Approach', 'SG ARG': 'Around Green', 'SG PUTT': 'Putting', 'SG T2G': 'Tee to Green', 'SG BS': 'Ball Striking' };
+const GREEN = '#3fb950';
+const RED = '#f85149';
+const BLUE = '#2f81f7';
+
+let allRows = [];
+let playerMap = {};
+let playerNames = [];
+let trendChart = null;
+let barChart = null;
+let sgMode = 'per-round';
+
+function splitCSVLine(line) {
+  const result = []; let cur = ''; let inQ = false;
+  for (let i = 0; i < line.length; i++) {
+    const ch = line[i];
+    if (inQ) {
+      if (ch === '"' && line[i+1] === '"') { cur += '"'; i++; }
+      else if (ch === '"') inQ = false;
+      else cur += ch;
+    } else {
+      if (ch === '"') inQ = true;
+      else if (ch === ',') { result.push(cur); cur = ''; }
+      else cur += ch;
+    }
+  }
+  result.push(cur);
+  return result;
+}
+
+function parseCSV(text) {
+  const lines = text.split('\n');
+  if (lines.length < 2) return [];
+  const headers = splitCSVLine(lines[0]).map(h => h.trim());
+  const rows = [];
+  for (let i = 1; i < lines.length; i++) {
+    const line = lines[i].trim();
+    if (!line) continue;
+    const vals = splitCSVLine(line);
+    const row = {};
+    headers.forEach((h, idx) => { row[h] = (vals[idx] || '').trim(); });
+    rows.push(row);
+  }
+  return rows;
+}
+
+function eventIndex(name) {
+  const lower = name.toLowerCase();
+  const idx = EVENT_ORDER.findIndex(e => lower.includes(e.toLowerCase()));
+  return idx === -1 ? 999 : idx;
+}
+
+function buildPlayerMap(rows) {
+  const map = {};
+  for (const row of rows) {
+    const name = row['PLAYER NAME'];
+    if (!name) continue;
+    if (!map[name]) map[name] = [];
+    map[name].push(row);
+  }
+  for (const name of Object.keys(map)) {
+    map[name].sort((a, b) => eventIndex(a['EVENT']) - eventIndex(b['EVENT']));
+  }
+  return map;
+}
+
+function avg(events, key) {
+  let sum = 0, count = 0;
+  for (const e of events) {
+    const v = parseFloat(e[key]);
+    if (!isNaN(v)) { sum += v; count++; }
+  }
+  return count > 0 ? sum / count : null;
+}
+
+function fmtSG(v) {
+  if (v == null || isNaN(v)) return '<span class="neutral">&mdash;</span>';
+  const s = (typeof v === 'number' ? v : parseFloat(v)).toFixed(2);
+  if (parseFloat(s) > 0) return `<span class="positive">+${s}</span>`;
+  if (parseFloat(s) < 0) return `<span class="negative">${s}</span>`;
+  return `<span class="neutral">${s}</span>`;
+}
+
+function fmtSGPlain(v) {
+  if (v == null) return '—';
+  const n = typeof v === 'number' ? v : parseFloat(v);
+  if (isNaN(n)) return '—';
+  return n > 0 ? '+' + n.toFixed(2) : n.toFixed(2);
+}
+
+function fmtPct(v) {
+  if (v == null || isNaN(v)) return '<span class="neutral">&mdash;</span>';
+  const n = typeof v === 'number' ? v : parseFloat(v);
+  if (isNaN(n)) return '<span class="neutral">&mdash;</span>';
+  return `<span class="neutral">${n.toFixed(1)}%</span>`;
+}
+
+function fmtDist(v) {
+  if (v == null || isNaN(v)) return '<span class="neutral">&mdash;</span>';
+  const n = typeof v === 'number' ? v : parseFloat(v);
+  if (isNaN(n)) return '<span class="neutral">&mdash;</span>';
+  return `<span class="neutral">${n.toFixed(1)}</span>`;
+}
+
+function fmtPctPlain(v) {
+  if (v == null) return '—';
+  return v.toFixed(1) + '%';
+}
+
+function fmtDistPlain(v) {
+  if (v == null) return '—';
+  return v.toFixed(1);
+}
+
+/* ---- Rendering ---- */
+
+function renderSearch(filter = '') {
+  if (trendChart) { trendChart.destroy(); trendChart = null; }
+  if (barChart) { barChart.destroy(); barChart = null; }
+
+  const q = filter.toLowerCase();
+  const filtered = q ? playerNames.filter(n => n.toLowerCase().includes(q)) : playerNames;
+
+  let listHTML = '';
+  if (filtered.length === 0) {
+    listHTML = '<div class="no-results">No players found</div>';
+  } else {
+    listHTML = filtered.map(name => {
+      const evts = playerMap[name].length;
+      return `<div class="player-item" data-name="${name}">
+        <span class="name">${name}</span>
+        <span class="events-badge">${evts} event${evts !== 1 ? 's' : ''}</span>
+      </div>`;
+    }).join('');
+  }
+
+  document.getElementById('app').innerHTML = `
+    <div class="search-wrap">
+      <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
+        <path d="M10.68 11.74a6 6 0 1 1 1.06-1.06l3.04 3.04a.75.75 0 1 1-1.06 1.06l-3.04-3.04ZM11.5 7a4.5 4.5 0 1 0-9 0 4.5 4.5 0 0 0 9 0Z"/>
+      </svg>
+      <input type="text" id="searchInput" placeholder="Search for a player&hellip;" value="${filter}">
+    </div>
+    <div class="player-list">
+      ${listHTML}
+      <div class="list-count">${filtered.length} of ${playerNames.length} players</div>
+    </div>
+  `;
+
+  document.getElementById('searchInput').addEventListener('input', e => {
+    renderSearch(e.target.value);
+    const inp = document.getElementById('searchInput');
+    if (inp) { inp.focus(); inp.setSelectionRange(inp.value.length, inp.value.length); }
+  });
+
+  document.querySelectorAll('.player-item').forEach(el => {
+    el.addEventListener('click', () => renderProfile(el.dataset.name));
+  });
+}
+
+function renderProfile(name) {
+  if (trendChart) { trendChart.destroy(); trendChart = null; }
+  if (barChart) { barChart.destroy(); barChart = null; }
+
+  const events = playerMap[name];
+  const totalEvents = events.length;
+  const avgTotal = avg(events, 'SG TOTAL');
+  const catAvgs = {};
+  SG_CATS.forEach(k => { catAvgs[k] = avg(events, k); });
+  const barAvgs = {};
+  BAR_CATS.forEach(k => { barAvgs[k] = avg(events, k); });
+  const avgDist = avg(events, 'D. DISTANCE');
+  const avgAcc = avg(events, 'D. ACCURACY');
+  const avgGir = avg(events, 'GIR');
+  const avgScr = avg(events, 'SCRAMBLING');
+
+  // Best / worst
+  let bestIdx = 0, worstIdx = 0;
+  let bestVal = -Infinity, worstVal = Infinity;
+  events.forEach((e, i) => {
+    const v = parseFloat(e['SG TOTAL']);
+    if (!isNaN(v)) {
+      if (v > bestVal) { bestVal = v; bestIdx = i; }
+      if (v < worstVal) { worstVal = v; worstIdx = i; }
+    }
+  });
+  const bestEvent = events[bestIdx];
+  const worstEvent = events[worstIdx];
+
+  // Strongest / weakest category
+  let strongest = null, weakest = null, sMax = -Infinity, wMin = Infinity;
+  SG_CATS.forEach(k => {
+    const a = catAvgs[k];
+    if (a != null) {
+      if (a > sMax) { sMax = a; strongest = k; }
+      if (a < wMin) { wMin = a; weakest = k; }
+    }
+  });
+
+  // Table rows — built dynamically based on sgMode
+  function buildEventTableInner() {
+    const SG_MULT_KEYS = ['SG OTT','SG APP','SG ARG','SG PUTT','SG TOTAL','SG T2G','SG BS'];
+    const isTotal = sgMode === 'tournament';
+    const subtitle = isTotal
+      ? 'SG stats shown as 4-round tournament totals (2 rounds for missed cuts)'
+      : 'SG stats shown as per-round averages';
+
+    const rows = events.map((e, i) => {
+      let cls = '';
+      if (totalEvents > 1 && i === bestIdx) cls = 'best-row';
+      else if (totalEvents > 1 && i === worstIdx) cls = 'worst-row';
+
+      const mc = e['MADE_CUT'];
+      const mult = isTotal ? ((mc === 'TRUE' || mc === '1' || mc === 'true') ? 4 : 2) : 1;
+
+      const sgCells = SG_MULT_KEYS.map(k => {
+        const raw = parseFloat(e[k]);
+        if (isNaN(raw)) return `<td>${fmtSG(null)}</td>`;
+        return `<td>${fmtSG(raw * mult)}</td>`;
+      }).join('');
+
+      // Non-multiplied columns (always raw values)
+      const distVal = parseFloat(e['D. DISTANCE']);
+      const accVal = parseFloat(e['D. ACCURACY']);
+      const girVal = parseFloat(e['GIR']);
+      const scrVal = parseFloat(e['SCRAMBLING']);
+
+      return `<tr class="${cls}">
+        <td>${e['EVENT']}</td>
+        <td>${e['POS']}</td>
+        <td>${e['TOTAL']}</td>
+        ${sgCells}
+        <td>${fmtDist(distVal)}</td>
+        <td>${fmtPct(accVal)}</td>
+        <td>${fmtPct(girVal)}</td>
+        <td>${fmtPct(scrVal)}</td>
+      </tr>`;
+    }).join('');
+
+    return `<div class="table-subtitle">${subtitle}</div>
+      <div class="table-wrap">
+        <table>
+          <thead><tr>
+            <th>Event</th><th>Pos</th><th>Total</th><th>SG OTT</th><th>SG APP</th><th>SG ARG</th><th>SG PUTT</th><th>SG Total</th><th>SG T2G</th><th>SG BS</th><th>Distance</th><th>Accuracy</th><th>GIR</th><th>Scrambling</th>
+          </tr></thead>
+          <tbody>${rows}</tbody>
+        </table>
+      </div>`;
+  }
+
+  document.getElementById('app').innerHTML = `
+    <button class="back-btn" id="backBtn">
+      <svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor"><path d="M7.78 12.53a.75.75 0 0 1-1.06 0L2.47 8.28a.75.75 0 0 1 0-1.06l4.25-4.25a.75.75 0 0 1 1.06 1.06L4.81 7h7.44a.75.75 0 0 1 0 1.5H4.81l2.97 2.97a.75.75 0 0 1 0 1.06Z"/></svg>
+      All Players
+    </button>
+
+    <div class="profile-header">
+      <div class="player-name">${name}</div>
+      <div class="header-stats">
+        <div class="header-stat">
+          <div class="label">Events</div>
+          <div class="value">${totalEvents}</div>
+        </div>
+        <div class="header-stat">
+          <div class="label">Avg SG Total</div>
+          <div class="value">${avgTotal != null ? fmtSGPlain(avgTotal) : '—'}</div>
+        </div>
+        <div class="header-stat">
+          <div class="label">Avg Distance</div>
+          <div class="value">${fmtDistPlain(avgDist)}</div>
+        </div>
+        <div class="header-stat">
+          <div class="label">Avg Accuracy</div>
+          <div class="value">${fmtPctPlain(avgAcc)}</div>
+        </div>
+        <div class="header-stat">
+          <div class="label">Avg GIR</div>
+          <div class="value">${fmtPctPlain(avgGir)}</div>
+        </div>
+        <div class="header-stat">
+          <div class="label">Avg Scrambling</div>
+          <div class="value">${fmtPctPlain(avgScr)}</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="section">
+      <div class="section-title">Skill Profile</div>
+      <div class="chart-box"><canvas id="barCanvas" height="220"></canvas></div>
+    </div>
+
+    ${totalEvents > 1 ? `
+    <div class="section">
+      <div class="section-title">SG Total Trend</div>
+      <div class="chart-box"><canvas id="trendCanvas" height="200"></canvas></div>
+    </div>` : ''}
+
+    <div class="section">
+      <div class="section-title">Summary</div>
+      <div class="cards-grid">
+        <div class="stat-card">
+          <div class="card-label">Best Event</div>
+          <div class="card-value positive">${fmtSGPlain(bestVal === -Infinity ? null : bestVal)}</div>
+          <div class="card-detail">${bestEvent ? bestEvent['EVENT'] : '—'}</div>
+        </div>
+        <div class="stat-card">
+          <div class="card-label">Worst Event</div>
+          <div class="card-value negative">${fmtSGPlain(worstVal === Infinity ? null : worstVal)}</div>
+          <div class="card-detail">${worstEvent ? worstEvent['EVENT'] : '—'}</div>
+        </div>
+        <div class="stat-card">
+          <div class="card-label">Strongest Category</div>
+          <div class="card-value positive">${strongest ? CAT_LABELS[strongest] : '—'}</div>
+          <div class="card-detail">${strongest ? fmtSGPlain(sMax) + ' avg' : ''}</div>
+        </div>
+        <div class="stat-card">
+          <div class="card-label">Weakest Category</div>
+          <div class="card-value negative">${weakest ? CAT_LABELS[weakest] : '—'}</div>
+          <div class="card-detail">${weakest ? fmtSGPlain(wMin) + ' avg' : ''}</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="section">
+      <div class="section-header">
+        <div class="section-title" style="margin-bottom:0">Event by Event</div>
+        <div class="pill-toggle">
+          <button class="pill-option${sgMode === 'per-round' ? ' active' : ''}" data-mode="per-round">Per Round</button>
+          <button class="pill-option${sgMode === 'tournament' ? ' active' : ''}" data-mode="tournament">Tournament Total</button>
+        </div>
+      </div>
+      <div id="eventTableContainer">${buildEventTableInner()}</div>
+    </div>
+  `;
+
+  document.getElementById('backBtn').addEventListener('click', () => renderSearch());
+
+  // Pill toggle for event table
+  document.querySelectorAll('.pill-option').forEach(btn => {
+    btn.addEventListener('click', () => {
+      sgMode = btn.dataset.mode;
+      document.querySelectorAll('.pill-option').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      document.getElementById('eventTableContainer').innerHTML = buildEventTableInner();
+    });
+  });
+
+  // Bar chart
+  const barCtx = document.getElementById('barCanvas').getContext('2d');
+  const barVals = BAR_CATS.map(k => barAvgs[k] != null ? +barAvgs[k].toFixed(2) : 0);
+  const barColors = barVals.map(v => v >= 0 ? GREEN : RED);
+
+  barChart = new Chart(barCtx, {
+    type: 'bar',
+    data: {
+      labels: BAR_CATS.map(k => BAR_LABELS[k]),
+      datasets: [{
+        data: barVals,
+        backgroundColor: barColors,
+        borderColor: barColors,
+        borderWidth: 1,
+        borderRadius: 3,
+        barPercentage: 0.6,
+      }]
+    },
+    options: {
+      indexAxis: 'y',
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: { legend: { display: false }, tooltip: {
+        backgroundColor: '#1c2129', titleColor: '#e8edf2', bodyColor: '#e8edf2',
+        borderColor: '#1e2530', borderWidth: 1, padding: 10,
+        callbacks: { label: ctx => (ctx.raw >= 0 ? '+' : '') + ctx.raw.toFixed(2) }
+      }},
+      scales: {
+        x: {
+          grid: { color: '#1e2530', drawTicks: false },
+          ticks: { color: '#5a6478', font: { size: 11 }, callback: v => (v >= 0 ? '+' : '') + v.toFixed(1) },
+          border: { color: '#1e2530' }
+        },
+        y: {
+          grid: { display: false },
+          ticks: { color: '#e8edf2', font: { size: 12, weight: '500' } },
+          border: { display: false }
+        }
+      }
+    }
+  });
+
+  // Trend chart
+  if (totalEvents > 1) {
+    const trendCtx = document.getElementById('trendCanvas').getContext('2d');
+    const trendLabels = events.map(e => e['EVENT']);
+    const trendData = events.map(e => { const v = parseFloat(e['SG TOTAL']); return isNaN(v) ? null : v; });
+
+    trendChart = new Chart(trendCtx, {
+      type: 'line',
+      data: {
+        labels: trendLabels,
+        datasets: [{
+          data: trendData,
+          borderColor: BLUE,
+          backgroundColor: BLUE + '18',
+          fill: true,
+          tension: 0.3,
+          pointBackgroundColor: BLUE,
+          pointBorderColor: '#080c10',
+          pointBorderWidth: 2,
+          pointRadius: 5,
+          pointHoverRadius: 7,
+          borderWidth: 2.5,
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+          legend: { display: false },
+          tooltip: {
+            backgroundColor: '#1c2129', titleColor: '#e8edf2', bodyColor: '#e8edf2',
+            borderColor: '#1e2530', borderWidth: 1, padding: 10,
+            callbacks: { label: ctx => 'SG Total: ' + (ctx.raw >= 0 ? '+' : '') + ctx.raw.toFixed(2) }
+          }
+        },
+        scales: {
+          x: {
+            grid: { color: '#1e2530', drawTicks: false },
+            ticks: { color: '#5a6478', font: { size: 11 }, maxRotation: 45, minRotation: 30 },
+            border: { color: '#1e2530' }
+          },
+          y: {
+            grid: { color: '#1e2530', drawTicks: false },
+            ticks: { color: '#5a6478', font: { size: 11 }, callback: v => (v >= 0 ? '+' : '') + v.toFixed(1) },
+            border: { color: '#1e2530' }
+          }
+        }
+      }
+    });
+  }
+}
+
+async function init() {
+  try {
+    const res = await fetch(CSV_URL);
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    const text = await res.text();
+    allRows = parseCSV(text);
+    playerMap = buildPlayerMap(allRows);
+    playerNames = Object.keys(playerMap).sort((a, b) => a.localeCompare(b));
+    renderSearch();
+  } catch (err) {
+    document.getElementById('app').innerHTML = `<div class="error">Failed to load data: ${err.message}</div>`;
+  }
+}
+
+init();
+</script>
+</body>
+</html>
