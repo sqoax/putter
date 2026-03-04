@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -575,15 +576,6 @@ function eventSortKey(eventName) {
   return idx >= 0 ? idx : 999;
 }
 
-function formatPlayerName(raw) {
-  const parts = raw.split(/\s+/);
-  if (parts.length < 2) return raw;
-  const last = parts[0];
-  const first = parts.slice(1).join(' ');
-  return first.charAt(0).toUpperCase() + first.slice(1).toLowerCase() + ' ' +
-         last.charAt(0).toUpperCase() + last.slice(1).toLowerCase();
-}
-
 // ---------- Data Loading ----------
 async function loadData() {
   try {
@@ -629,12 +621,12 @@ function setupSearch(inputId, dropId, clearId, side) {
   const clearBtn = document.getElementById(clearId);
 
   input.addEventListener('input', () => {
-    const q = input.value.trim().toUpperCase();
+    const q = input.value.trim().toLowerCase();
     if (!q) { drop.classList.remove('open'); return; }
-    const matches = playerNames.filter(n => n.includes(q)).slice(0, 40);
+    const matches = playerNames.filter(n => n.toLowerCase().includes(q)).slice(0, 40);
     if (!matches.length) { drop.classList.remove('open'); return; }
     drop.innerHTML = matches.map(n =>
-      `<div class="dropdown-item" data-name="${n}">${formatPlayerName(n)}</div>`
+      `<div class="dropdown-item" data-name="${n}">${n}</div>`
     ).join('');
     drop.classList.add('open');
   });
@@ -643,7 +635,7 @@ function setupSearch(inputId, dropId, clearId, side) {
     const item = e.target.closest('.dropdown-item');
     if (!item) return;
     const name = item.dataset.name;
-    input.value = formatPlayerName(name);
+    input.value = name;
     input.classList.add(side === 'a' ? 'selected-a' : 'selected-b');
     drop.classList.remove('open');
     clearBtn.classList.add('visible');
@@ -709,8 +701,8 @@ function tryCompare() {
   const a = getPlayerStats(selectedA);
   const b = getPlayerStats(selectedB);
 
-  const nameA = formatPlayerName(a.name);
-  const nameB = formatPlayerName(b.name);
+  const nameA = a.name;
+  const nameB = b.name;
 
   let html = '';
 
