@@ -849,16 +849,14 @@ function fmtRounds(r) {
   return `<span class="rnds-thin">${r}</span>`;
 }
 function fmtOdds(dbName) {
-  // DB names are "LAST FIRST" — convert to "first last" lowercase for DK lookup
-  const spaceIdx = dbName.indexOf(' ');
-  if (spaceIdx < 0) return '<span class="neutral">&mdash;</span>';
-  const last = dbName.substring(0, spaceIdx);
-  const first = dbName.substring(spaceIdx + 1);
-  const lookupKey = (first + ' ' + last).toLowerCase();
-  const odds = oddsLookup[lookupKey];
+  const odds = oddsLookup[dbName.toLowerCase()];
   if (!odds) return '<span class="neutral">&mdash;</span>';
-  if (odds.startsWith('+')) return `<span class="positive">${odds}</span>`;
-  return `<span class="neutral">${odds}</span>`;
+  const num = parseInt(odds, 10);
+  if (isNaN(num)) return '<span class="neutral">&mdash;</span>';
+  const mult = num > 0 ? (num / 100) : (100 / Math.abs(num));
+  const label = parseFloat(mult.toFixed(1)) + '/1';
+  if (num > 0) return `<span class="positive">${label}</span>`;
+  return `<span class="neutral">${label}</span>`;
 }
 
 /* ---- Column header helper ---- */
@@ -1028,7 +1026,7 @@ function render() {
               ${thHTML('name', 'Player')}
               ${thHTML('rounds', 'Rnds')}
               ${thHTML('composite', 'Composite')}
-              ${thHTML('odds', 'DK Odds')}
+              ${thHTML('odds', 'Odds')}
               ${DISPLAY_COLS.map(k => thHTML(k, k)).join('')}
             </tr></thead>
             <tbody>${rows}</tbody>
