@@ -237,6 +237,15 @@
     display: flex;
     gap: 12px;
   }
+  .field-tournament {
+    margin-top: 10px;
+    font-size: 12px;
+    color: #9fb0c5;
+  }
+  .field-tournament .label {
+    color: #5a6478;
+    margin-right: 6px;
+  }
   .match-info .good { color: #3fb950; }
   .match-info .bad { color: #f85149; }
 
@@ -575,6 +584,10 @@
 
 <script>
 const CSV_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vTPiodfvBnqD6FVNZXYBsv4KGipr4KYiQA273S64Quj3a9s1_dLaAEma665pM4m-zPRKJzcpkmDDDbN/pub?output=csv';
+const FIELD_CSV_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vRNP6CpaVpPDMWb14vlaC8E47PGlgEZqbx6BAMsLUMXl6I9gvcP9BujsNf9FdIcSkEcs0DpGDe6J-6x/pub?output=csv';
+const DK_ODDS_URL = 'https://sportsbook-nash.draftkings.com/sites/US-NC-SB/api/sportscontent/controldata/league/leagueSubcategory/v1/markets?isBatchable=false&templateVars=94238%2C4508&eventsQuery=%24filter%3DleagueId%20eq%20%2794238%27%20AND%20clientMetadata%2FSubcategories%2Fany%28s%3A%20s%2FId%20eq%20%274508%27%29&marketsQuery=%24filter%3DclientMetadata%2FsubCategoryId%20eq%20%274508%27%20AND%20tags%2Fall%28t%3A%20t%20ne%20%27SportcastBetBuilder%27%29&include=Events&entity=events';
+const RECENCY_DECAY = 0.90;
+const EVENT_ORDER = ['Procore','Sanderson','Utah','RSM','Sony','Amex','Farmers','Waste','Pebble','Genesis','Cognizant'];
 
 const COMPONENT_STATS = ['SG OTT','SG APP','SG ARG','SG PUTT','SCRAMBLING','GIR','D. DISTANCE','D. ACCURACY'];
 const COMPOSITE_STATS = ['SG TOTAL','SG T2G','SG BS'];
@@ -582,24 +595,6 @@ const ALL_STAT_KEYS = [...COMPONENT_STATS, ...COMPOSITE_STATS];
 const ALL_AVG_KEYS = [...ALL_STAT_KEYS];
 
 const DISPLAY_COLS = ['SG OTT','SG APP','SG ARG','SG PUTT','SG T2G','SG BS','SCRAMBLING','GIR','D. DISTANCE','D. ACCURACY'];
-
-const THIS_WEEK_FIELD = [
-  'Joel Dahmen','Daniel Bennett','Tom Hoge','Jhonattan Vegas','Ryan Fox',
-  'Billy Horschel','Patrick Rodgers','Brian Campbell','Matt Mccarty','Max Greyserman',
-  'Taylor Moore','Andrew Putnam','Alex Noren','Daniel Berger','Min Woo Lee',
-  'Michael Thorbjornsen','Harry Hall','Corey Conners','Cameron Young','Sepp Straka',
-  'Harris English','Patrick Cantlay','Robert Macintyre','Andrew Novak','Akshay Bhatia',
-  'Brian Harman','Collin Morikawa','Justin Rose','Xander Schauffele','Shane Lowry',
-  'Scottie Scheffler','Russell Henley','Adam Scott','Aldrich Potgieter','J.t. Poston',
-  'Keith Mitchell','Nicolai Hojgaard','Austin Smotherman','Si Woo Kim','Bud Cauley',
-  'Ryo Hisatsune','Lucas Glover','Ryan Gerard','Jason Day','Taylor Pendrith',
-  'Denny Mccarthy','Kurt Kitayama','Pierceson Coody','Jordan Spieth','Sam Stevens',
-  'Matt Fitzpatrick','Jake Knapp','Sam Burns','Sungjae Im','J.j. Spaun',
-  'Nick Taylor','Maverick Mcnealy','Keegan Bradley','Tommy Fleetwood','Ben Griffin',
-  'Ludvig Aberg','Nico Echavarria','Jacob Bridgeman','Chris Gotterup','Hideki Matsuyama',
-  'Justin Thomas','Rory Mcilroy','Viktor Hovland','Rickie Fowler','Michael Kim',
-  'Sahith Theegala','Chris Kirk'
-];
 
 const COURSE_PRESETS = [
   { name: 'Balanced', weights: { 'SG OTT':18,'SG APP':24,'SG ARG':10,'SG PUTT':12,'SCRAMBLING':8,'GIR':14,'D. DISTANCE':7,'D. ACCURACY':7,'SG TOTAL':0,'SG T2G':0,'SG BS':0 }},
@@ -613,12 +608,15 @@ const COURSE_PRESETS = [
 
 let rawDB = {};       // all players regardless of min rounds
 let allPlayers = [];  // filtered by minRounds
+let thisWeekField = [];
+let thisWeekTournament = '';
 let fieldMode = 'all';  // 'all' | 'thisWeek' | 'custom'
 let fieldPlayers = [];
 let unmatched = [];
 let customFieldText = '';
 let minRounds = 8;
 let activePreset = null;  // index into COURSE_PRESETS or null
+let oddsLookup = {};  // lowercase "first last" → american odds string
 
 let weights = {
   'SG OTT': 15, 'SG APP': 35, 'SG ARG': 20, 'SG PUTT': 20,
@@ -655,22 +653,76 @@ function parseCSV(text) {
   return rows;
 }
 
+function parseFieldCSV(text) {
+  const lines = text.split('\n').map(l => l.trim()).filter(Boolean);
+  if (!lines.length) return { names: [], tournamentName: '' };
+
+  const firstRow = splitCSV(lines[0]);
+  const firstCell = (firstRow[0] || '').trim().toLowerCase();
+  const tournamentName = (firstRow[1] || '').trim();
+  const startIdx = firstCell === 'player name' || firstCell === 'player' ? 1 : 0;
+
+  const names = lines
+    .slice(startIdx)
+    .map(line => (splitCSV(line)[0] || '').trim())
+    .filter(Boolean);
+
+  return { names, tournamentName };
+}
+
+function eventIndex(name) {
+  if (!name) return -1;
+  const lower = name.toLowerCase();
+  const idx = EVENT_ORDER.findIndex(e => lower.includes(e.toLowerCase()));
+  return idx;
+}
+
+function buildEventWeights(rows) {
+  const eventToIdx = {};
+  let maxKnown = -1;
+
+  for (const row of rows) {
+    const eventName = (row['EVENT'] || '').trim();
+    if (!eventName || eventToIdx[eventName] !== undefined) continue;
+    const idx = eventIndex(eventName);
+    eventToIdx[eventName] = idx;
+    if (idx > maxKnown) maxKnown = idx;
+  }
+
+  if (maxKnown < 0) maxKnown = 0;
+
+  const weights = {};
+  for (const [eventName, idx] of Object.entries(eventToIdx)) {
+    // Unknown events are treated as current so new tournaments still get full recency weight.
+    if (idx < 0) {
+      weights[eventName] = 1;
+      continue;
+    }
+    const t = Math.max(0, maxKnown - idx);
+    weights[eventName] = Math.pow(RECENCY_DECAY, t);
+  }
+  return weights;
+}
+
 /* ---- Build DB ---- */
 let csvRows = []; // keep raw rows for re-filtering
 
 function buildRawDB(rows) {
+  const eventWeights = buildEventWeights(rows);
   const tmp = {};
   for (const row of rows) {
     const name = row['PLAYER NAME'];
     if (!name) continue;
     if (!tmp[name]) tmp[name] = { rounds: 0, sums: {}, counts: {} };
+    const eventName = (row['EVENT'] || '').trim();
+    const w = eventWeights[eventName] || 1;
     const mc = row['MADE_CUT'];
     tmp[name].rounds += (mc === 'TRUE' || mc === '1' || mc === 'true') ? 4 : 2;
     for (const k of ALL_AVG_KEYS) {
       const v = parseFloat(row[k]);
       if (!isNaN(v)) {
-        tmp[name].sums[k] = (tmp[name].sums[k] || 0) + v;
-        tmp[name].counts[k] = (tmp[name].counts[k] || 0) + 1;
+        tmp[name].sums[k] = (tmp[name].sums[k] || 0) + (v * w);
+        tmp[name].counts[k] = (tmp[name].counts[k] || 0) + w;
       }
     }
   }
@@ -796,6 +848,18 @@ function fmtRounds(r) {
   if (r >= 12) return `<span class="rnds-normal">${r}</span>`;
   return `<span class="rnds-thin">${r}</span>`;
 }
+function fmtOdds(dbName) {
+  // DB names are "LAST FIRST" — convert to "first last" lowercase for DK lookup
+  const spaceIdx = dbName.indexOf(' ');
+  if (spaceIdx < 0) return '<span class="neutral">&mdash;</span>';
+  const last = dbName.substring(0, spaceIdx);
+  const first = dbName.substring(spaceIdx + 1);
+  const lookupKey = (first + ' ' + last).toLowerCase();
+  const odds = oddsLookup[lookupKey];
+  if (!odds) return '<span class="neutral">&mdash;</span>';
+  if (odds.startsWith('+')) return `<span class="positive">${odds}</span>`;
+  return `<span class="neutral">${odds}</span>`;
+}
 
 /* ---- Column header helper ---- */
 function thHTML(colKey, label) {
@@ -817,7 +881,11 @@ function render() {
   /* ---- Left: Field panel ---- */
   let fieldStatusHTML = '';
   if (fieldMode === 'thisWeek' || fieldMode === 'custom') {
+    const tournamentHTML = (fieldMode === 'thisWeek' && thisWeekTournament)
+      ? `<div class="field-tournament"><span class="label">Tournament:</span>${thisWeekTournament}</div>`
+      : '';
     fieldStatusHTML = `
+      ${tournamentHTML}
       <div class="match-info">
         <span class="good">${fieldPlayers.length} matched</span>
         ${unmatched.length > 0 ? `<span class="bad">${unmatched.length} unmatched</span>` : ''}
@@ -946,6 +1014,7 @@ function render() {
       <td class="col-player">${p.name}</td>
       <td>${fmtRounds(p.rounds)}</td>
       <td>${fmtComposite(p.composite)}</td>
+      <td>${fmtOdds(p.name)}</td>
       ${DISPLAY_COLS.map(k => `<td>${fmtCell(k, p.avgs[k])}</td>`).join('')}
     </tr>`).join('');
 
@@ -959,6 +1028,7 @@ function render() {
               ${thHTML('name', 'Player')}
               ${thHTML('rounds', 'Rnds')}
               ${thHTML('composite', 'Composite')}
+              ${thHTML('odds', 'DK Odds')}
               ${DISPLAY_COLS.map(k => thHTML(k, k)).join('')}
             </tr></thead>
             <tbody>${rows}</tbody>
@@ -989,7 +1059,7 @@ function bind() {
 
   document.getElementById('btnThisWeek').addEventListener('click', () => {
     fieldMode = 'thisWeek';
-    const res = matchFieldFromList(THIS_WEEK_FIELD);
+    const res = matchFieldFromList(thisWeekField);
     fieldPlayers = res.matched;
     unmatched = res.unmatched;
     render();
@@ -1025,7 +1095,7 @@ function bind() {
     filterByMinRounds();
     // Re-match field if active
     if (fieldMode === 'thisWeek') {
-      const res = matchFieldFromList(THIS_WEEK_FIELD);
+      const res = matchFieldFromList(thisWeekField);
       fieldPlayers = res.matched;
       unmatched = res.unmatched;
     } else if (fieldMode === 'custom' && customFieldText.trim()) {
@@ -1139,6 +1209,7 @@ function updateTableAndTotal() {
       <td class="col-player">${p.name}</td>
       <td>${fmtRounds(p.rounds)}</td>
       <td>${fmtComposite(p.composite)}</td>
+      <td>${fmtOdds(p.name)}</td>
       ${DISPLAY_COLS.map(k => `<td>${fmtCell(k, p.avgs[k])}</td>`).join('')}
     </tr>`).join('');
   }
@@ -1147,11 +1218,47 @@ function updateTableAndTotal() {
 /* ==== INIT ==== */
 async function init() {
   try {
-    const res = await fetch(CSV_URL);
-    if (!res.ok) throw new Error(`HTTP ${res.status}`);
-    const text = await res.text();
-    csvRows = parseCSV(text);
+    const [statsRes, fieldRes, dkRes] = await Promise.all([
+      fetch(CSV_URL),
+      fetch(FIELD_CSV_URL),
+      fetch(DK_ODDS_URL).catch(() => null)
+    ]);
+    if (!statsRes.ok) throw new Error(`Stats CSV HTTP ${statsRes.status}`);
+
+    const statsText = await statsRes.text();
+    csvRows = parseCSV(statsText);
     rawDB = buildRawDB(csvRows);
+
+    if (fieldRes.ok) {
+      const fieldText = await fieldRes.text();
+      const parsedField = parseFieldCSV(fieldText);
+      thisWeekField = parsedField.names;
+      thisWeekTournament = parsedField.tournamentName;
+    } else {
+      thisWeekField = [];
+      thisWeekTournament = '';
+      console.warn(`Field CSV unavailable (HTTP ${fieldRes.status}).`);
+    }
+
+    // Build DK odds lookup — fail silently if anything goes wrong
+    try {
+      if (dkRes && dkRes.ok) {
+        const dkData = await dkRes.json();
+        const market = (dkData.markets || [])[0];
+        if (market) {
+          const marketId = market.id;
+          for (const sel of (dkData.selections || [])) {
+            if (sel.marketId === marketId && sel.label && sel.displayOdds) {
+              oddsLookup[sel.label.toLowerCase()] = sel.displayOdds.american;
+            }
+          }
+        }
+      }
+    } catch (e) {
+      oddsLookup = {};
+      console.warn('DK odds fetch failed:', e.message);
+    }
+
     filterByMinRounds();
     render();
   } catch (err) {
