@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -535,6 +536,17 @@
   thead th.sort-active { color: #2f81f7; }
   thead th.col-player { text-align: left; }
 
+  .th-note {
+    display: block;
+    margin-top: 2px;
+    font-size: 9px;
+    font-weight: 500;
+    letter-spacing: 0;
+    text-transform: none;
+    color: #5a6478;
+  }
+  thead th.sort-active .th-note { color: #8ab4f8; }
+
   .sort-arrow {
     font-size: 10px;
     margin-left: 3px;
@@ -787,8 +799,7 @@ function filterByMinRounds() {
   allPlayers = Object.entries(rawDB)
     .filter(([, d]) => d.rounds >= minRounds)
     .map(([name, d]) => ({ name, ...d }));
-  globalNormStats = {};
-  for (const k of ALL_STAT_KEYS) globalNormStats[k] = zScores(allPlayers, k);
+  globalNormStats = buildNormStats(allPlayers);
 }
 
 /* ---- Composite scoring ---- */
@@ -800,7 +811,18 @@ function zScores(players, key) {
   return sd > 0 ? { mean, sd } : null;
 }
 
-function computeComposite(players) {
+function buildNormStats(players) {
+  const normStats = {};
+  for (const k of ALL_STAT_KEYS) normStats[k] = zScores(players, k);
+  return normStats;
+}
+
+function getNormStatsForPlayers(players) {
+  if (fieldMode === 'all') return globalNormStats;
+  return buildNormStats(players);
+}
+
+function computeComposite(players, normStats) {
   const activeKeys = ALL_STAT_KEYS.filter(k => weights[k] > 0);
   const totalW = activeKeys.reduce((s, k) => s + weights[k], 0);
   if (totalW === 0) { players.forEach(p => p.composite = 0); return; }
@@ -808,7 +830,7 @@ function computeComposite(players) {
     let score = 0;
     for (const k of activeKeys) {
       const w = weights[k] / totalW;
-      const s = globalNormStats[k];
+      const s = normStats[k];
       const raw = p.avgs[k];
       if (s && raw != null) score += ((raw - s.mean) / s.sd) * w;
     }
@@ -911,8 +933,12 @@ function thHTML(colKey, label) {
 /* ==== RENDER ==== */
 function render() {
   const displayPlayers = getDisplayPlayers();
-  computeComposite(displayPlayers);
+  const normStats = getNormStatsForPlayers(displayPlayers);
+  computeComposite(displayPlayers, normStats);
   const sorted = sortPlayers(displayPlayers);
+  const compositeLabel = fieldMode === 'all'
+    ? 'Composite'
+    : 'Composite<span class="th-note">vs. this field</span>';
 
   const totalW = ALL_STAT_KEYS.reduce((s, k) => s + weights[k], 0);
   const totalOk = Math.abs(totalW - 100) < 0.5;
@@ -1105,7 +1131,7 @@ function render() {
               ${thHTML('rank', '#')}
               ${thHTML('name', 'Player')}
               ${thHTML('rounds', 'Rnds')}
-              ${thHTML('composite', 'Composite')}
+              ${thHTML('composite', compositeLabel)}
               ${thHTML('odds', 'Odds (Frac)')}
               ${DISPLAY_COLS.map(k => thHTML(k, k)).join('')}
             </tr></thead>
@@ -1285,7 +1311,8 @@ function updateTableAndTotal() {
 
   // Re-compute and re-render rankings table
   const displayPlayers = getDisplayPlayers();
-  computeComposite(displayPlayers);
+  const normStats = getNormStatsForPlayers(displayPlayers);
+  computeComposite(displayPlayers, normStats);
   const sorted = sortPlayers(displayPlayers);
 
   const tbody = document.querySelector('.right-col tbody');
