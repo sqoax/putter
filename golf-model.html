@@ -1,4 +1,5 @@
 
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -1384,6 +1385,292 @@ async function init() {
 }
 
 init();
+</script>
+<style>
+  @media (max-width: 900px) {
+    .nav-inner {
+      align-items: flex-start;
+      flex-direction: column;
+      justify-content: center;
+      gap: 8px;
+      padding-top: 8px;
+      padding-bottom: 8px;
+    }
+
+    .navbar {
+      height: auto;
+      min-height: 64px;
+    }
+
+    .nav-tabs {
+      display: flex;
+      width: 100%;
+      overflow-x: auto;
+      overflow-y: hidden;
+      padding-bottom: 2px;
+      -webkit-overflow-scrolling: touch;
+      scrollbar-width: thin;
+    }
+
+    .nav-tabs::-webkit-scrollbar {
+      height: 4px;
+    }
+
+    .nav-tabs::-webkit-scrollbar-thumb {
+      background: #1e2530;
+      border-radius: 999px;
+    }
+  }
+
+  th[data-sort="odds"] {
+    cursor: default;
+  }
+
+  th[data-sort="odds"] .sort-arrow {
+    display: none;
+  }
+
+  .read-strip {
+    margin-bottom: 12px;
+    padding: 10px 14px;
+    border: 1px solid #1e2530;
+    border-radius: 8px;
+    background: #0d1117;
+    color: #5a6478;
+    font-size: 11px;
+    line-height: 1.45;
+  }
+
+  .read-strip-line + .read-strip-line {
+    margin-top: 4px;
+  }
+</style>
+<script>
+(() => {
+  function applyUiAuditTweaks() {
+    document.querySelectorAll('.weight-warning').forEach(el => {
+      const replacement = 'Weights are automatically normalized — any ratio works.';
+      if (el.textContent !== replacement) el.textContent = replacement;
+    });
+
+    const oddsHeader = document.querySelector('th[data-sort="odds"]');
+    if (oddsHeader) {
+      const arrow = oddsHeader.querySelector('.sort-arrow');
+      if (arrow) arrow.remove();
+    }
+
+    const rankingsPanel = Array.from(document.querySelectorAll('.right-col .panel')).find(panel => {
+      const head = panel.querySelector('.panel-head');
+      return head && head.textContent.trim().startsWith('Rankings');
+    });
+
+    if (rankingsPanel && !document.querySelector('.read-strip')) {
+      const strip = document.createElement('div');
+      strip.className = 'read-strip';
+      strip.innerHTML = `
+        <div class="read-strip-line">Composite — weighted model score; field-relative in filtered modes</div>
+        <div class="read-strip-line">Rnds — green = large sample, white = moderate, gray = small</div>
+        <div class="read-strip-line">Model vs Mkt — rank disagreement with odds board, not a betting edge</div>
+        <div class="read-strip-line">Odds — display only, does not affect scoring</div>
+      `;
+      rankingsPanel.parentNode.insertBefore(strip, rankingsPanel);
+    }
+  }
+
+  const appRoot = document.getElementById('app');
+  if (!appRoot) return;
+
+  const observer = new MutationObserver(() => {
+    applyUiAuditTweaks();
+  });
+  observer.observe(appRoot, { childList: true, subtree: true });
+
+  applyUiAuditTweaks();
+})();
+</script>
+<style>
+  th[data-mvm-col],
+  td[data-mvm-col] {
+    min-width: 96px;
+  }
+
+  td[data-mvm-col] {
+    font-weight: 600;
+    font-variant-numeric: tabular-nums;
+  }
+</style>
+<script>
+(() => {
+  const MVM_ATTR = 'data-mvm-col';
+  const NEUTRAL_THRESHOLD = 3;
+
+  function parseFractionalOdds(oddsText) {
+    if (!oddsText) return null;
+    const text = String(oddsText).trim();
+    const fracMatch = text.match(/^([+-]?\d+(?:\.\d+)?)\s*\/\s*([+-]?\d+(?:\.\d+)?)$/);
+    if (fracMatch) {
+      const numerator = parseFloat(fracMatch[1]);
+      const denominator = parseFloat(fracMatch[2]);
+      if (Number.isFinite(numerator) && Number.isFinite(denominator) && denominator !== 0) {
+        return numerator / denominator;
+      }
+    }
+    const parsed = parseFloat(text.replace(/,/g, ''));
+    return Number.isFinite(parsed) ? parsed : null;
+  }
+
+  function buildAverageRanks(items) {
+    const ranks = {};
+    let i = 0;
+    while (i < items.length) {
+      let j = i + 1;
+      while (j < items.length && items[j].metric === items[i].metric) j++;
+      const avgRank = ((i + 1) + j) / 2;
+      for (let k = i; k < j; k++) ranks[items[k].key] = avgRank;
+      i = j;
+    }
+    return ranks;
+  }
+
+  function buildSignals() {
+    if (typeof getDisplayPlayers !== 'function') return {};
+    const displayPlayers = getDisplayPlayers();
+    if (!Array.isArray(displayPlayers) || displayPlayers.length === 0) return {};
+
+    const comparablePlayers = displayPlayers
+      .map(player => {
+        const oddsText = oddsLookup[player.name.toLowerCase()];
+        const marketMetric = parseFractionalOdds(oddsText);
+        return { player, key: player.name.toLowerCase(), marketMetric, oddsText };
+      })
+      .filter(entry => entry.marketMetric != null);
+
+    const signals = {};
+    if (comparablePlayers.length < 2) return signals;
+
+    const modelSorted = [...comparablePlayers].sort((a, b) => {
+      if (b.player.composite !== a.player.composite) return b.player.composite - a.player.composite;
+      return a.player.name.localeCompare(b.player.name);
+    });
+
+    const modelRanks = {};
+    modelSorted.forEach((entry, idx) => { modelRanks[entry.key] = idx + 1; });
+
+    const marketSorted = [...comparablePlayers].sort((a, b) => {
+      if (a.marketMetric !== b.marketMetric) return a.marketMetric - b.marketMetric;
+      return a.player.name.localeCompare(b.player.name);
+    }).map(entry => ({ key: entry.key, metric: entry.marketMetric }));
+
+    const marketRanks = buildAverageRanks(marketSorted);
+    const n = comparablePlayers.length;
+
+    comparablePlayers.forEach(entry => {
+      const modelRank = modelRanks[entry.key];
+      const marketRank = marketRanks[entry.key];
+      if (modelRank == null || marketRank == null) return;
+
+      const modelPct = 1 - ((modelRank - 1) / (n - 1));
+      const marketPct = 1 - ((marketRank - 1) / (n - 1));
+      const valueGap = modelPct - marketPct;
+      const rankDelta = marketRank - modelRank;
+      const roundedDelta = Math.round(rankDelta);
+
+      signals[entry.key] = {
+        modelPct,
+        marketPct,
+        valueGap,
+        rankDelta,
+        roundedDelta
+      };
+    });
+
+    return signals;
+  }
+
+  function formatSignal(playerName, playerComposite, signals) {
+    const signal = signals[playerName.toLowerCase()];
+    if (playerComposite == null || playerComposite <= 0 || !signal) {
+      return '<span class="neutral">&mdash;</span>';
+    }
+
+    const rounded = signal.roundedDelta;
+    const absRaw = Math.abs(signal.rankDelta);
+    const cls = absRaw <= NEUTRAL_THRESHOLD
+      ? 'neutral'
+      : (signal.rankDelta > 0 ? 'positive' : 'negative');
+    const sign = rounded > 0 ? '+' : '';
+    const label = Math.abs(rounded) === 1 ? 'rank' : 'ranks';
+    return `<span class="${cls}">${sign}${rounded} ${label}</span>`;
+  }
+
+  function ensureHeader(table) {
+    const headerRow = table.querySelector('thead tr');
+    if (!headerRow) return;
+
+    let mvmHeader = headerRow.querySelector(`th[${MVM_ATTR}]`);
+    if (!mvmHeader) {
+      const oddsHeader = headerRow.querySelector('th[data-sort="odds"]');
+      if (!oddsHeader) return;
+      mvmHeader = document.createElement('th');
+      mvmHeader.setAttribute(MVM_ATTR, '1');
+      mvmHeader.textContent = 'Model vs Mkt';
+      oddsHeader.insertAdjacentElement('afterend', mvmHeader);
+    }
+  }
+
+  function enhanceTable() {
+    const table = document.querySelector('.right-col table');
+    if (!table) return;
+
+    ensureHeader(table);
+
+    const signals = buildSignals();
+    const rows = table.querySelectorAll('tbody tr');
+    rows.forEach(row => {
+      const cells = row.querySelectorAll('td');
+      if (cells.length < 5) return;
+
+      const playerCell = row.querySelector('td.col-player');
+      if (!playerCell) return;
+      const playerName = playerCell.textContent.trim();
+
+      const displayPlayers = typeof getDisplayPlayers === 'function' ? getDisplayPlayers() : [];
+      const playerData = Array.isArray(displayPlayers)
+        ? displayPlayers.find(player => player.name === playerName)
+        : null;
+      const playerComposite = playerData ? playerData.composite : null;
+
+      let mvmCell = row.querySelector(`td[${MVM_ATTR}]`);
+      const cellHTML = formatSignal(playerName, playerComposite, signals);
+      if (!mvmCell) {
+        mvmCell = document.createElement('td');
+        mvmCell.setAttribute(MVM_ATTR, '1');
+        cells[4].insertAdjacentElement('afterend', mvmCell);
+      }
+      if (mvmCell.innerHTML !== cellHTML) mvmCell.innerHTML = cellHTML;
+    });
+  }
+
+  let scheduled = false;
+  function scheduleEnhance() {
+    if (scheduled) return;
+    scheduled = true;
+    requestAnimationFrame(() => {
+      scheduled = false;
+      enhanceTable();
+    });
+  }
+
+  const appRoot = document.getElementById('app');
+  if (!appRoot) return;
+
+  const observer = new MutationObserver(() => {
+    scheduleEnhance();
+  });
+  observer.observe(appRoot, { childList: true, subtree: true });
+
+  scheduleEnhance();
+})();
 </script>
 </body>
 </html>
